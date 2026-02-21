@@ -1,0 +1,83 @@
+# LMS Backend - Requirements
+# Core Framework
+Flask
+Flask-CORS
+Werkzeug
+
+# Database
+Flask-SQLAlchemy
+SQLAlchemy
+PyMySQL
+Flask-Migrate
+alembic
+
+# Authentication & Security
+PyJWT
+bcrypt
+cryptography
+
+# Caching & Session
+redis
+python-memcached
+
+# Message Queue
+kafka-python
+
+# Environment Variables
+python-dotenv
+
+# HTTP & API
+requests
+httpx
+
+# Email Service
+Flask-Mail
+sendgrid
+
+# Payment Processing
+stripe
+
+# File Handling & Storage
+boto3
+Pillow
+
+# Data Validation
+marshmallow
+marshmallow-sqlalchemy
+pydantic
+
+# Utilities
+python-dateutil
+pytz
+validators
+slugify
+
+# Logging & Monitoring
+python-logging-loki
+
+# Development Tools
+python-decouple
+
+# Testing
+pytest
+pytest-cov
+pytest-flask
+factory-boy
+
+# Production Server
+gunicorn
+whitenoise
+
+# Code Quality
+black
+flake8
+pylint
+isort
+
+# API Documentation
+flasgger
+Flask-RESTX
+
+# Async Support
+gevent
+greenlet
