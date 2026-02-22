@@ -12,11 +12,16 @@ Pattern:
     - Response formatting
 
 Files:
-    - auth_middleware.py: JWT authentication (@require_auth, @require_role, @require_owner)
-    - validators_middleware.py: Request validation (@validate_json, @validate_query_params, @validate_uuid)
-    - rate_limiting_middleware.py: Rate limiting (@limit_rate, @limit_payment_attempts, @limit_login_attempts)
-    - response_middleware.py: Response formatting (StandardResponse, @format_response)
-    - audit_middleware.py: Audit logging (@audit_action, @log_authentication)
+    - auth_middleware.py: JWT authentication
+      (@require_auth, @require_role, @require_owner)
+    - validators_middleware.py: Request validation
+      (@validate_json, @validate_query_params, @validate_uuid)
+    - rate_limiting_middleware.py: Rate limiting
+      (@limit_rate, @limit_payment_attempts, @limit_login_attempts)
+    - response_middleware.py: Response formatting
+      (StandardResponse, @format_response)
+    - audit_middleware.py: Audit logging
+      (@audit_action, @log_authentication)
     - error_handlers.py: Exception handling
 """
 
