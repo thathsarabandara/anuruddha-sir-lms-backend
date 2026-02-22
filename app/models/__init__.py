@@ -20,7 +20,17 @@ from app.models.auth import (
     EmailVerificationToken,
 )
 
+# Import all user profile models
+from app.models.users import (
+    UserProfile,
+    UserPreferences,
+    UserActivityLog,
+    UserStatistics,
+    UserSuspensionLog,
+)
+
 __all__ = [
+    # Auth Models
     'User',
     'Role',
     'Permission',
@@ -32,6 +42,12 @@ __all__ = [
     'LoginHistory',
     'PasswordResetToken',
     'EmailVerificationToken',
+    # Users Models
+    'UserProfile',
+    'UserPreferences',
+    'UserActivityLog',
+    'UserStatistics',
+    'UserSuspensionLog',
 ]
 
 # Import other models as they are created
