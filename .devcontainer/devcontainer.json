@@ -1,0 +1,99 @@
+{
+  "name": "Flask LMS Backend",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "backend",
+  "workspaceFolder": "/workspace",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        "charliermarsh.ruff",
+        "ms-vscode.makefile-tools",
+        "ms-vscode-remote.remote-containers",
+        "eamodio.gitlens",
+        "ms-vscode.rest-client",
+        "ritwickdey.rest-client",
+        "Thunder Client",
+        "mhutchie.git-graph",
+        "zhuangtongfa.material-theme",
+        "ms-vscode.theme-defaults"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.linting.flake8Enabled": true,
+        "python.linting.flake8Args": [
+          "--max-line-length=100",
+          "--ignore=E203,W503"
+        ],
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": [
+          "--line-length=100"
+        ],
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+          "tests"
+        ]
+      }
+    }
+  },
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true
+    }
+  },
+
+  "forwardPorts": [5000, 3306, 6379, 9092],
+  "portAttributes": {
+    "5000": {
+      "label": "Flask API",
+      "onAutoForward": "notify"
+    },
+    "3306": {
+      "label": "MySQL",
+      "onAutoForward": "silent"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "silent"
+    },
+    "9092": {
+      "label": "Kafka",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt && pip install -e . --no-deps && echo 'Dev container setup complete!'",
+
+  "remoteEnv": {
+    "FLASK_ENV": "development",
+    "FLASK_APP": "main.py",
+    "DEBUG": "True",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/root/.ssh,readonly"
+  ]
+}
