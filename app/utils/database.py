@@ -35,9 +35,11 @@ class DatabaseInitializer:
         Returns:
             dict: Parsed database details
         """
+        self.logger.debug(f"Parsing database URL: {self.db_uri}")
         parsed = urlparse(self.db_uri)
+        self.logger.debug(f"Parsed database URL: {parsed}")
         return {
-            'driver': parsed.scheme.split('+')[0],  # mysql, postgresql, sqlite, etc.
+            'driver': parsed.scheme.split('+')[0],
             'user': parsed.username,
             'password': parsed.password,
             'host': parsed.hostname,
@@ -63,9 +65,9 @@ class DatabaseInitializer:
             try:
                 # Create connection to server without specifying database
                 if driver == 'mysql':
-                    engine_uri = f"mysql+pymysql://{parsed['user']}:{parsed['password']}@{parsed['host']}:{parsed['port'] or 3306}"
+                    engine_uri = f"mysql+pymysql://{parsed['user']}:{parsed['password']}@{parsed['host']}:{parsed['port']}"
                 elif driver == 'postgresql':
-                    engine_uri = f"postgresql://{parsed['user']}:{parsed['password']}@{parsed['host']}:{parsed['port'] or 5432}/postgres"
+                    engine_uri = f"postgresql://{parsed['user']}:{parsed['password']}@{parsed['host']}:{parsed['port']}/postgres"
 
                 engine = create_engine(engine_uri)
                 
