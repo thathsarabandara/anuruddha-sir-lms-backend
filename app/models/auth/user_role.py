@@ -24,9 +24,9 @@ class UserRole(db.Model):
     
     # Primary Key
     user_role_id = db.Column(
-        db.Integer,
+        db.String(36),
         primary_key=True,
-        autoincrement=True,
+        default=lambda: str(uuid.uuid4()),
         nullable=False
     )
     
