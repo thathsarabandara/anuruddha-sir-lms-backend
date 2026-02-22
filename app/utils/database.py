@@ -3,11 +3,11 @@ Database initialization and management utilities.
 Handles automatic database and table creation on application startup.
 """
 
-import os
 import logging
-from sqlalchemy import create_engine, text, inspect
-from sqlalchemy.exc import OperationalError
 from urllib.parse import urlparse
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class DatabaseInitializer:
     def __init__(self, db_uri, app_logger=None):
         """
         Initialize the database manager.
-        
+
         Args:
             db_uri: Database connection URI
             app_logger: Optional Flask app logger
@@ -31,21 +31,23 @@ class DatabaseInitializer:
     def parse_database_url(self):
         """
         Parse database URL to extract connection details.
-        
+
         Returns:
             dict: Parsed database details
         """
-        self.logger.debug(f"Parsing database URL: {self.db_uri}")
+        db_uri_msg = f"Parsing database URL: {self.db_uri}"
+        self.logger.debug(db_uri_msg)
         parsed = urlparse(self.db_uri)
-        self.logger.debug(f"Parsed database URL: {parsed}")
+        parsed_msg = f"Parsed database URL: {parsed}"
+        self.logger.debug(parsed_msg)
         return {
-            'driver': parsed.scheme.split('+')[0],
-            'user': parsed.username,
-            'password': parsed.password,
-            'host': parsed.hostname,
-            'port': parsed.port,
-            'database': parsed.path.lstrip('/'),
-            'dialect': parsed.scheme
+            "driver": parsed.scheme.split("+")[0],
+            "user": parsed.username,
+            "password": parsed.password,
+            "host": parsed.hostname,
+            "port": parsed.port,
+            "database": parsed.path.lstrip("/"),
+            "dialect": parsed.scheme,
         }
 
     def create_database_if_not_exists(self):
@@ -54,47 +56,66 @@ class DatabaseInitializer:
         Currently supports MySQL and PostgreSQL.
         """
         parsed = self.parse_database_url()
-        driver = parsed['driver'].lower()
+        driver = parsed["driver"].lower()
 
-        if driver == 'sqlite':
+        if driver == "sqlite":
             # SQLite creates database automatically
             self.logger.info("Using SQLite - database will be created automatically")
             return True
 
-        if driver in ['mysql', 'postgresql']:
+        if driver in ["mysql", "postgresql"]:
             try:
                 # Create connection to server without specifying database
-                if driver == 'mysql':
-                    engine_uri = f"mysql+pymysql://{parsed['user']}:{parsed['password']}@{parsed['host']}:{parsed['port']}"
-                elif driver == 'postgresql':
-                    engine_uri = f"postgresql://{parsed['user']}:{parsed['password']}@{parsed['host']}:{parsed['port']}/postgres"
+                if driver == "mysql":
+                    user = parsed['user']
+                    password = parsed['password']
+                    host = parsed['host']
+                    port = parsed['port']
+                    engine_uri = (
+                        f"mysql+pymysql://{user}:{password}@{host}:{port}"
+                    )
+                elif driver == "postgresql":
+                    user = parsed['user']
+                    password = parsed['password']
+                    host = parsed['host']
+                    port = parsed['port']
+                    engine_uri = (
+                        f"postgresql://{user}:{password}@{host}:{port}/postgres"
+                    )
 
                 engine = create_engine(engine_uri)
-                
+
                 with engine.connect() as connection:
                     # Check if database exists
-                    db_name = parsed['database']
-                    
-                    if driver == 'mysql':
-                        result = connection.execute(
-                            text(f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{db_name}'")
+                    db_name = parsed["database"]
+
+                    if driver == "mysql":
+                        query = (
+                            "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA "
+                            f"WHERE SCHEMA_NAME = '{db_name}'"
                         )
+                        result = connection.execute(text(query))
                         exists = result.fetchone() is not None
-                        
+
                         if not exists:
                             self.logger.info(f"Creating MySQL database: {db_name}")
-                            connection.execute(text(f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"))
+                            create_query = (
+                                f"CREATE DATABASE {db_name} CHARACTER SET utf8mb4 "
+                                "COLLATE utf8mb4_unicode_ci"
+                            )
+                            connection.execute(text(create_query))
                             connection.commit()
-                            self.logger.info(f"✓ Database '{db_name}' created successfully")
+                            msg = f"✓ Database '{db_name}' created successfully"
+                            self.logger.info(msg)
                         else:
                             self.logger.info(f"✓ Database '{db_name}' already exists")
-                    
-                    elif driver == 'postgresql':
+
+                    elif driver == "postgresql":
                         result = connection.execute(
                             text(f"SELECT datname FROM pg_database WHERE datname = '{db_name}'")
                         )
                         exists = result.fetchone() is not None
-                        
+
                         if not exists:
                             self.logger.info(f"Creating PostgreSQL database: {db_name}")
                             connection.execute(text(f"CREATE DATABASE {db_name}"))
@@ -102,10 +123,10 @@ class DatabaseInitializer:
                             self.logger.info(f"✓ Database '{db_name}' created successfully")
                         else:
                             self.logger.info(f"✓ Database '{db_name}' already exists")
-                
+
                 engine.dispose()
                 return True
-                
+
             except OperationalError as e:
                 self.logger.error(f"✗ Failed to create database: {str(e)}")
                 return False
@@ -119,7 +140,7 @@ class DatabaseInitializer:
     def verify_connection(self):
         """
         Verify database connection is working.
-        
+
         Returns:
             bool: True if connection successful, False otherwise
         """
@@ -140,38 +161,38 @@ class DatabaseInitializer:
         1. Create database if not exists
         2. Verify connection
         3. Create all tables from models
-        
+
         Args:
             db: SQLAlchemy database instance
             app: Flask application instance (optional)
-            
+
         Returns:
             bool: True if initialization successful, False otherwise
         """
         try:
             self.logger.info("Starting database initialization...")
-            
+
             # Step 1: Create database if not exists
             self.logger.info("Step 1: Creating database if not exists...")
             if not self.create_database_if_not_exists():
                 self.logger.warning("Database creation failed, attempting to continue...")
-            
+
             # Step 2: Verify connection
             self.logger.info("Step 2: Verifying database connection...")
             if not self.verify_connection():
                 self.logger.error("Database connection verification failed")
                 return False
-            
+
             # Step 3: Create all tables
             if app:
                 self.logger.info("Step 3: Creating database tables from models...")
                 with app.app_context():
                     db.create_all()
                     self.logger.info("✓ Database tables created/verified")
-            
+
             self.logger.info("✓ Database initialization completed successfully")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"✗ Database initialization failed: {str(e)}")
             return False
@@ -180,27 +201,27 @@ class DatabaseInitializer:
 def init_database(app, db):
     """
     Initialize database on application startup.
-    
+
     Args:
         app: Flask application instance
         db: SQLAlchemy database instance
-        
+
     Returns:
         bool: True if initialization successful
     """
-    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI')
-    
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
+
     if not db_uri:
         app.logger.error("SQLALCHEMY_DATABASE_URI not configured")
         if not app.testing:
             raise ValueError("Database URI not configured")
         return False
-    
+
     # Skip for SQLite in-memory databases (testing)
-    if 'sqlite:///:memory:' in db_uri:
+    if "sqlite:///:memory:" in db_uri:
         with app.app_context():
             db.create_all()
         return True
-    
+
     initializer = DatabaseInitializer(db_uri, app.logger)
     return initializer.initialize_database(db, app)
