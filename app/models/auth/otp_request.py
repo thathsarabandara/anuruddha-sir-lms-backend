@@ -34,9 +34,9 @@ class OTPRequest(db.Model):
     
     # Primary Key
     otp_id = db.Column(
-        db.Integer,
+        db.String(36),
         primary_key=True,
-        autoincrement=True,
+        default=lambda: str(uuid.uuid4()),
         nullable=False
     )
     
