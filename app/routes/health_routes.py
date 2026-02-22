@@ -4,18 +4,19 @@ API endpoints for health monitoring
 """
 
 from flask import Blueprint, jsonify
+
 from app.services.health_service import HealthCheckService
 
-bp = Blueprint('health', __name__, url_prefix='/api/v1/health')
+bp = Blueprint("health", __name__, url_prefix="/api/v1/health")
 
 
-@bp.route('', methods=['GET'])
-@bp.route('/', methods=['GET'])
+@bp.route("", methods=["GET"])
+@bp.route("/", methods=["GET"])
 def health_check():
     """
     GET /api/v1/health
     Main health check endpoint
-    
+
     Returns:
         200: {status: "healthy", service, version, timestamp, environment, database}
     """
@@ -23,12 +24,12 @@ def health_check():
     return jsonify(data), 200
 
 
-@bp.route('/ready', methods=['GET'])
+@bp.route("/ready", methods=["GET"])
 def readiness_check():
     """
     GET /api/v1/health/ready
     Readiness probe - indicates if service is ready for traffic
-    
+
     Returns:
         200: Service ready {ready: true, message, timestamp}
         503: Service not ready {ready: false, message, timestamp}
@@ -38,12 +39,12 @@ def readiness_check():
     return jsonify(data), status_code
 
 
-@bp.route('/live', methods=['GET'])
+@bp.route("/live", methods=["GET"])
 def liveness_check():
     """
     GET /api/v1/health/live
     Liveness probe - indicates if service is running
-    
+
     Returns:
         200: {alive: true, timestamp}
     """
