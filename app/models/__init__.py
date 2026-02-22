@@ -44,6 +44,16 @@ from app.models.courses import (
     CourseStatusAudit,
 )
 
+# Import all quizzes models
+from app.models.quizzes import (
+    Quiz,
+    Question,
+    QuestionOption,
+    QuizAttempt,
+    AttemptAnswer,
+    ManualGrade,
+)
+
 __all__ = [
     # Auth Models (12)
     'User',
@@ -75,6 +85,13 @@ __all__ = [
     'CourseReview',
     'CourseActivityLog',
     'CourseStatusAudit',
+    # Quizzes Models (6)
+    'Quiz',
+    'Question',
+    'QuestionOption',
+    'QuizAttempt',
+    'AttemptAnswer',
+    'ManualGrade',
 ]
 
 # Import other models as they are created
