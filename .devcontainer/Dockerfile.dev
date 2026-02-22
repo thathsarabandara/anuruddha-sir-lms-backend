@@ -12,8 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vim \
     curl \
     wget \
-    postgresql-client \
-    mysql-client \
+    default-mysql-client \
     redis-tools \
     && rm -rf /var/lib/apt/lists/*
 
@@ -39,9 +38,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pylint \
     isort \
     Flask-DebugToolbar \
-    ipython \
-    ipdb \
-    pdb
+    ipython 
 
 # Create necessary directories
 RUN mkdir -p /workspace/logs /workspace/uploads
