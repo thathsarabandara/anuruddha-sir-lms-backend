@@ -52,9 +52,7 @@ class Certificate(db.Model):
     
     user_id = db.Column(
         db.String(36),
-        db.ForeignKey('user.user_id', ondelete='CASCADE'),
-        nullable=False,
-        index=True
+    db.ForeignKey('users.user_id', ondelete='CASCADE'),
     )
     
     template_id = db.Column(

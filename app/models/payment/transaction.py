@@ -44,7 +44,7 @@ class Transaction(db.Model):
     # Foreign Keys
     user_id = db.Column(
         db.String(36),
-        db.ForeignKey('user.user_id', ondelete='CASCADE'),
+        db.ForeignKey('users.user_id', ondelete='CASCADE'),
         nullable=False,
         index=True
     )

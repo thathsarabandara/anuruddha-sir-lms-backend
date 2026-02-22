@@ -94,7 +94,7 @@ class CourseActivityLog(db.Model):
     )
     
     # Metadata
-    metadata = db.Column(
+    meta_data = db.Column(
         db.Text,
         nullable=True
     )
@@ -114,16 +114,16 @@ class CourseActivityLog(db.Model):
     
     def get_metadata(self):
         """Safely parse JSON metadata."""
-        if not self.metadata:
+        if not self.meta_data:
             return {}
         try:
-            return json.loads(self.metadata)
+            return json.loads(self.meta_data)
         except (json.JSONDecodeError, TypeError):
             return {}
     
     def set_metadata(self, data):
         """Serialize metadata to JSON."""
-        self.metadata = json.dumps(data) if data else None
+        self.meta_data = json.dumps(data) if data else None
     
     def __repr__(self):
         return f"<CourseActivityLog {self.activity_id} - {self.activity_type}>"

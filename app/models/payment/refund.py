@@ -43,7 +43,7 @@ class Refund(db.Model):
     
     user_id = db.Column(
         db.String(36),
-        db.ForeignKey('user.user_id'),
+        db.ForeignKey('users.user_id'),
         nullable=False
     )
     
