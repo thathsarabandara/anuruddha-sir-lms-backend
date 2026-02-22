@@ -54,6 +54,16 @@ from app.models.quizzes import (
     ManualGrade,
 )
 
+# Import all notifications models
+from app.models.notifications import (
+    Notification,
+    NotificationPreferences,
+    NotificationTypePreferences,
+    NotificationDeliveryLog,
+    NotificationTemplate,
+    NotificationBatch,
+)
+
 __all__ = [
     # Auth Models (12)
     'User',
@@ -92,6 +102,13 @@ __all__ = [
     'QuizAttempt',
     'AttemptAnswer',
     'ManualGrade',
+    # Notifications Models (6)
+    'Notification',
+    'NotificationPreferences',
+    'NotificationTypePreferences',
+    'NotificationDeliveryLog',
+    'NotificationTemplate',
+    'NotificationBatch',
 ]
 
 # Import other models as they are created
