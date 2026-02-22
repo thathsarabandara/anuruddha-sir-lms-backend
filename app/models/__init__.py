@@ -64,6 +64,14 @@ from app.models.notifications import (
     NotificationBatch,
 )
 
+# Import all reviews models
+from app.models.reviews import (
+    Review,
+    ReviewResponse,
+    ReviewVote,
+    ReviewFlag,
+)
+
 __all__ = [
     # Auth Models (12)
     'User',
@@ -109,6 +117,11 @@ __all__ = [
     'NotificationDeliveryLog',
     'NotificationTemplate',
     'NotificationBatch',
+    # Reviews Models (4)
+    'Review',
+    'ReviewResponse',
+    'ReviewVote',
+    'ReviewFlag',
 ]
 
 # Import other models as they are created
