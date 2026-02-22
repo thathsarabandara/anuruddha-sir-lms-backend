@@ -68,7 +68,7 @@ def create_app(config_name="development"):
 
     # Import all models to register them with SQLAlchemy metadata
     # This ensures db.create_all() can properly handle all model relationships
-    from app.models import (
+    from app.models import (  # noqa: F401
         Achievement,
         AttemptAnswer,
         Certificate,
