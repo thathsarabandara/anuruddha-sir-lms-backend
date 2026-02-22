@@ -10,6 +10,7 @@ from flask_migrate import Migrate
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+from app.utils.database import init_database
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -58,9 +59,10 @@ def create_app(config_name='development'):
     # Setup logging
     setup_logging(app)
     
-    # Create tables
-    with app.app_context():
-        db.create_all()
+    # Initialize database with auto-creation
+    app.logger.info("Initializing database...")
+    if not init_database(app, db):
+        app.logger.warning("Database initialization completed with warnings. Check logs above.")
     
     # Register error handlers
     from app.middleware.error_handlers import register_error_handlers
