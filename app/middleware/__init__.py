@@ -21,7 +21,12 @@ Files:
 """
 
 # Audit logging exports
-from .audit_middleware import AuditLog, audit_action, log_authentication, log_to_database
+from .audit_middleware import (
+    AuditLog,
+    audit_action,
+    log_authentication,
+    log_to_database,
+)
 
 # Authentication exports
 from .auth_middleware import (
