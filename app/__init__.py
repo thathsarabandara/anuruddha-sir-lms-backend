@@ -56,7 +56,26 @@ def create_app(config_name='development'):
     from app.routes import health_routes
     app.register_blueprint(health_routes.bp)
     
-    from app.models import __all__
+    # Import all models to register them with SQLAlchemy metadata
+    # This ensures db.create_all() can properly handle all model relationships
+    from app.models import (
+        User, Role, Permission, UserRole, RolePermission,
+        OTPRequest, LoginFailure, UserAccountStatus, LoginHistory,
+        PasswordResetToken, EmailVerificationToken,
+        UserProfile, UserPreferences, UserActivityLog, UserStatistics, UserSuspensionLog,
+        CourseCategory, Course, CourseSection, CourseLesson, LessonContent,
+        LessonContentProgress, CourseEnrollment, CourseEnrollmentKey, CourseReview,
+        CourseActivityLog, CourseStatusAudit,
+        Quiz, Question, QuestionOption, QuizAttempt, AttemptAnswer, ManualGrade,
+        Notification, NotificationPreferences, NotificationTypePreferences,
+        NotificationDeliveryLog, NotificationTemplate, NotificationBatch,
+        Review, ReviewResponse, ReviewVote, ReviewFlag,
+        UserPoints, PointTransaction, Achievement, UserAchievement,
+        LeaderboardSnapshot, Streak, Challenge,
+        Certificate, CertificateTemplate, CertificateVerificationLog, CertificateSharingLog,
+        Transaction, Invoice, Refund, Coupon,
+    )
+    
     # Setup logging
     setup_logging(app)
     
