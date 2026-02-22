@@ -83,6 +83,14 @@ from app.models.rewards import (
     Challenge,
 )
 
+# Import all certificates models
+from app.models.certificates import (
+    Certificate,
+    CertificateTemplate,
+    CertificateVerificationLog,
+    CertificateSharingLog,
+)
+
 __all__ = [
     # Auth Models (12)
     'User',
@@ -141,6 +149,11 @@ __all__ = [
     'LeaderboardSnapshot',
     'Streak',
     'Challenge',
+    # Certificates Models (4)
+    'Certificate',
+    'CertificateTemplate',
+    'CertificateVerificationLog',
+    'CertificateSharingLog',
 ]
 
 # Import other models as they are created
