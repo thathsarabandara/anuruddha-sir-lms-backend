@@ -91,6 +91,14 @@ from app.models.certificates import (
     CertificateSharingLog,
 )
 
+# Import all payment models
+from app.models.payment import (
+    Transaction,
+    Invoice,
+    Refund,
+    Coupon,
+)
+
 __all__ = [
     # Auth Models (12)
     'User',
@@ -154,6 +162,11 @@ __all__ = [
     'CertificateTemplate',
     'CertificateVerificationLog',
     'CertificateSharingLog',
+    # Payment Models (4)
+    'Transaction',
+    'Invoice',
+    'Refund',
+    'Coupon',
 ]
 
 # Import other models as they are created
