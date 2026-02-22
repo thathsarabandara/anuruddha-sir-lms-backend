@@ -5,12 +5,16 @@ Main entry point for the Flask LMS Backend Application
 import os
 from dotenv import load_dotenv
 from app import create_app
+from app.commands import register_db_commands
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Create Flask application instance
 app = create_app(config_name=os.environ.get('FLASK_ENV', 'development'))
+
+# Register CLI commands
+register_db_commands(app)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
