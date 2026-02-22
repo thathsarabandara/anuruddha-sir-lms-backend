@@ -72,6 +72,17 @@ from app.models.reviews import (
     ReviewFlag,
 )
 
+# Import all rewards models
+from app.models.rewards import (
+    UserPoints,
+    PointTransaction,
+    Achievement,
+    UserAchievement,
+    LeaderboardSnapshot,
+    Streak,
+    Challenge,
+)
+
 __all__ = [
     # Auth Models (12)
     'User',
@@ -122,6 +133,14 @@ __all__ = [
     'ReviewResponse',
     'ReviewVote',
     'ReviewFlag',
+    # Rewards Models (7)
+    'UserPoints',
+    'PointTransaction',
+    'Achievement',
+    'UserAchievement',
+    'LeaderboardSnapshot',
+    'Streak',
+    'Challenge',
 ]
 
 # Import other models as they are created
