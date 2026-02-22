@@ -42,7 +42,7 @@ class CertificateTemplate(db.Model):
     # Foreign Keys
     created_by = db.Column(
         db.String(36),
-        db.ForeignKey('user.user_id'),
+        db.ForeignKey('users.user_id'),
         nullable=True
     )
     
