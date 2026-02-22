@@ -13,7 +13,7 @@ services:
       FLASK_ENV: ${FLASK_ENV:-development}
       FLASK_APP: main.py
       DEBUG: ${DEBUG:-False}
-      DATABASE_URL: mysql+pymysql://${DB_USER:-root}:${DB_PASSWORD:-password}@mysql:3306/${DB_NAME:-lms_db}
+      DATABASE_URL: mysql+pymysql://${DB_USER:-lms_user}:${DB_PASSWORD:-lms_user_pass}@mysql:3306/${DB_NAME:-lms_db}
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
@@ -49,16 +49,15 @@ services:
 
   # MySQL Database
   mysql:
-    image: mysql:8.0
+    image: mysql:latest
     container_name: lms-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-lms_pass}
       MYSQL_DATABASE: ${DB_NAME:-lms_db}
       MYSQL_USER: ${DB_USER:-lms_user}
-      MYSQL_PASSWORD: ${DB_USER_PASSWORD:-user_password}
-      MYSQL_ROOT_HOST: '%'
+      MYSQL_PASSWORD: ${DB_USER_PASSWORD:-lms_user_pass}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/mysql-init:/docker-entrypoint-initdb.d
@@ -76,7 +75,7 @@ services:
     image: redis:7-alpine
     container_name: lms-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     networks:
