@@ -3,7 +3,9 @@ Main entry point for the Flask LMS Backend Application
 """
 
 import os
+
 from dotenv import load_dotenv
+
 from app import create_app
 from app.commands import register_db_commands
 
@@ -11,15 +13,15 @@ from app.commands import register_db_commands
 load_dotenv()
 
 # Create Flask application instance
-app = create_app(config_name=os.environ.get('FLASK_ENV', 'development'))
+app = create_app(config_name=os.environ.get("FLASK_ENV", "development"))
 
 # Register CLI commands
 register_db_commands(app)
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('DEBUG', True)
-    
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("DEBUG", True)
+
     print(f"""
     ╔════════════════════════════════════════════════════════════╗
     ║         LMS Backend - Flask Application Started             ║
@@ -32,5 +34,5 @@ if __name__ == '__main__':
     ║ Health Check: http://localhost:{port}/api/v1/health      ║
     ╚════════════════════════════════════════════════════════════╝
     """)
-    
-    app.run(host='0.0.0.0', port=port, debug=debug)
+
+    app.run(host="0.0.0.0", port=port, debug=debug)
