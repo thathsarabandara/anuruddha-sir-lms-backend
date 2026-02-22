@@ -64,6 +64,14 @@ from .audit_middleware import (
     AuditLog
 )
 
+# CORS exports
+from .cors_middleware import (
+    configure_cors,
+    setup_cors_error_handler,
+    require_origin,
+    add_security_headers
+)
+
 __all__ = [
     # Authentication
     'require_auth',
@@ -97,5 +105,11 @@ __all__ = [
     'audit_action',
     'log_authentication',
     'log_to_database',
-    'AuditLog'
+    'AuditLog',
+    
+    # CORS
+    'configure_cors',
+    'setup_cors_error_handler',
+    'require_origin',
+    'add_security_headers'
 ]
