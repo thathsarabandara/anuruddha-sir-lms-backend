@@ -32,9 +32,9 @@ class UserAccountStatus(db.Model):
     
     # Primary Key
     status_id = db.Column(
-        db.Integer,
+        db.String(36),
         primary_key=True,
-        autoincrement=True,
+        default=lambda: str(uuid.uuid4()),
         nullable=False
     )
     
