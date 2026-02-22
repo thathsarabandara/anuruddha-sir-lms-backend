@@ -3,170 +3,158 @@ Database models module
 All SQLAlchemy models should be imported here for migration purposes
 """
 
-from app import db
-
 # Import all authentication models
 from app.models.auth import (
-    User,
-    Role,
-    Permission,
-    UserRole,
-    RolePermission,
-    OTPRequest,
-    LoginFailure,
-    UserAccountStatus,
-    LoginHistory,
-    PasswordResetToken,
     EmailVerificationToken,
-)
-
-# Import all user profile models
-from app.models.users import (
-    UserProfile,
-    UserPreferences,
-    UserActivityLog,
-    UserStatistics,
-    UserSuspensionLog,
-)
-
-# Import all courses models
-from app.models.courses import (
-    CourseCategory,
-    Course,
-    CourseSection,
-    CourseLesson,
-    LessonContent,
-    LessonContentProgress,
-    CourseEnrollment,
-    CourseEnrollmentKey,
-    CourseReview,
-    CourseActivityLog,
-    CourseStatusAudit,
-)
-
-# Import all quizzes models
-from app.models.quizzes import (
-    Quiz,
-    Question,
-    QuestionOption,
-    QuizAttempt,
-    AttemptAnswer,
-    ManualGrade,
-)
-
-# Import all notifications models
-from app.models.notifications import (
-    Notification,
-    NotificationPreferences,
-    NotificationTypePreferences,
-    NotificationDeliveryLog,
-    NotificationTemplate,
-    NotificationBatch,
-)
-
-# Import all reviews models
-from app.models.reviews import (
-    Review,
-    ReviewResponse,
-    ReviewVote,
-    ReviewFlag,
-)
-
-# Import all rewards models
-from app.models.rewards import (
-    UserPoints,
-    PointTransaction,
-    Achievement,
-    UserAchievement,
-    LeaderboardSnapshot,
-    Streak,
-    Challenge,
+    LoginFailure,
+    LoginHistory,
+    OTPRequest,
+    PasswordResetToken,
+    Permission,
+    Role,
+    RolePermission,
+    User,
+    UserAccountStatus,
+    UserRole,
 )
 
 # Import all certificates models
 from app.models.certificates import (
     Certificate,
+    CertificateSharingLog,
     CertificateTemplate,
     CertificateVerificationLog,
-    CertificateSharingLog,
+)
+
+# Import all courses models
+from app.models.courses import (
+    Course,
+    CourseActivityLog,
+    CourseCategory,
+    CourseEnrollment,
+    CourseEnrollmentKey,
+    CourseLesson,
+    CourseReview,
+    CourseSection,
+    CourseStatusAudit,
+    LessonContent,
+    LessonContentProgress,
+)
+
+# Import all notifications models
+from app.models.notifications import (
+    Notification,
+    NotificationBatch,
+    NotificationDeliveryLog,
+    NotificationPreferences,
+    NotificationTemplate,
+    NotificationTypePreferences,
 )
 
 # Import all payment models
-from app.models.payment import (
-    Transaction,
-    Invoice,
-    Refund,
-    Coupon,
+from app.models.payment import Coupon, Invoice, Refund, Transaction
+
+# Import all quizzes models
+from app.models.quizzes import (
+    AttemptAnswer,
+    ManualGrade,
+    Question,
+    QuestionOption,
+    Quiz,
+    QuizAttempt,
+)
+
+# Import all reviews models
+from app.models.reviews import Review, ReviewFlag, ReviewResponse, ReviewVote
+
+# Import all rewards models
+from app.models.rewards import (
+    Achievement,
+    Challenge,
+    LeaderboardSnapshot,
+    PointTransaction,
+    Streak,
+    UserAchievement,
+    UserPoints,
+)
+
+# Import all user profile models
+from app.models.users import (
+    UserActivityLog,
+    UserPreferences,
+    UserProfile,
+    UserStatistics,
+    UserSuspensionLog,
 )
 
 __all__ = [
     # Auth Models (12)
-    'User',
-    'Role',
-    'Permission',
-    'UserRole',
-    'RolePermission',
-    'OTPRequest',
-    'LoginFailure',
-    'UserAccountStatus',
-    'LoginHistory',
-    'PasswordResetToken',
-    'EmailVerificationToken',
+    "User",
+    "Role",
+    "Permission",
+    "UserRole",
+    "RolePermission",
+    "OTPRequest",
+    "LoginFailure",
+    "UserAccountStatus",
+    "LoginHistory",
+    "PasswordResetToken",
+    "EmailVerificationToken",
     # Users Models (5)
-    'UserProfile',
-    'UserPreferences',
-    'UserActivityLog',
-    'UserStatistics',
-    'UserSuspensionLog',
+    "UserProfile",
+    "UserPreferences",
+    "UserActivityLog",
+    "UserStatistics",
+    "UserSuspensionLog",
     # Courses Models (11)
-    'CourseCategory',
-    'Course',
-    'CourseSection',
-    'CourseLesson',
-    'LessonContent',
-    'LessonContentProgress',
-    'CourseEnrollment',
-    'CourseEnrollmentKey',
-    'CourseReview',
-    'CourseActivityLog',
-    'CourseStatusAudit',
+    "CourseCategory",
+    "Course",
+    "CourseSection",
+    "CourseLesson",
+    "LessonContent",
+    "LessonContentProgress",
+    "CourseEnrollment",
+    "CourseEnrollmentKey",
+    "CourseReview",
+    "CourseActivityLog",
+    "CourseStatusAudit",
     # Quizzes Models (6)
-    'Quiz',
-    'Question',
-    'QuestionOption',
-    'QuizAttempt',
-    'AttemptAnswer',
-    'ManualGrade',
+    "Quiz",
+    "Question",
+    "QuestionOption",
+    "QuizAttempt",
+    "AttemptAnswer",
+    "ManualGrade",
     # Notifications Models (6)
-    'Notification',
-    'NotificationPreferences',
-    'NotificationTypePreferences',
-    'NotificationDeliveryLog',
-    'NotificationTemplate',
-    'NotificationBatch',
+    "Notification",
+    "NotificationPreferences",
+    "NotificationTypePreferences",
+    "NotificationDeliveryLog",
+    "NotificationTemplate",
+    "NotificationBatch",
     # Reviews Models (4)
-    'Review',
-    'ReviewResponse',
-    'ReviewVote',
-    'ReviewFlag',
+    "Review",
+    "ReviewResponse",
+    "ReviewVote",
+    "ReviewFlag",
     # Rewards Models (7)
-    'UserPoints',
-    'PointTransaction',
-    'Achievement',
-    'UserAchievement',
-    'LeaderboardSnapshot',
-    'Streak',
-    'Challenge',
+    "UserPoints",
+    "PointTransaction",
+    "Achievement",
+    "UserAchievement",
+    "LeaderboardSnapshot",
+    "Streak",
+    "Challenge",
     # Certificates Models (4)
-    'Certificate',
-    'CertificateTemplate',
-    'CertificateVerificationLog',
-    'CertificateSharingLog',
+    "Certificate",
+    "CertificateTemplate",
+    "CertificateVerificationLog",
+    "CertificateSharingLog",
     # Payment Models (4)
-    'Transaction',
-    'Invoice',
-    'Refund',
-    'Coupon',
+    "Transaction",
+    "Invoice",
+    "Refund",
+    "Coupon",
 ]
 
 # Import other models as they are created
