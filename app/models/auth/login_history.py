@@ -31,7 +31,7 @@ class LoginHistory(db.Model):
     login_id = db.Column(
         db.String(36),
         primary_key=True,
-        autoIncrement=True,
+        default=lambda: str(uuid.uuid4()),
         nullable=False
     )
     
