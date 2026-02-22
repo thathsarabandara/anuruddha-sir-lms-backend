@@ -29,8 +29,23 @@ from app.models.users import (
     UserSuspensionLog,
 )
 
+# Import all courses models
+from app.models.courses import (
+    CourseCategory,
+    Course,
+    CourseSection,
+    CourseLesson,
+    LessonContent,
+    LessonContentProgress,
+    CourseEnrollment,
+    CourseEnrollmentKey,
+    CourseReview,
+    CourseActivityLog,
+    CourseStatusAudit,
+)
+
 __all__ = [
-    # Auth Models
+    # Auth Models (12)
     'User',
     'Role',
     'Permission',
@@ -42,14 +57,26 @@ __all__ = [
     'LoginHistory',
     'PasswordResetToken',
     'EmailVerificationToken',
-    # Users Models
+    # Users Models (5)
     'UserProfile',
     'UserPreferences',
     'UserActivityLog',
     'UserStatistics',
     'UserSuspensionLog',
+    # Courses Models (11)
+    'CourseCategory',
+    'Course',
+    'CourseSection',
+    'CourseLesson',
+    'LessonContent',
+    'LessonContentProgress',
+    'CourseEnrollment',
+    'CourseEnrollmentKey',
+    'CourseReview',
+    'CourseActivityLog',
+    'CourseStatusAudit',
 ]
 
 # Import other models as they are created
-# from app.models.course import Course
 # from app.models.quiz import Quiz
+# from app.models.notifications import Notification
