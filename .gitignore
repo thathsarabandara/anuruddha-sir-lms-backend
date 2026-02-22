@@ -157,7 +157,6 @@ npm-debug.log
 yarn-error.log
 
 # GitHub & IDE
-.github/workflows/
 .vscode/settings.json
 .idea/
 *.iml

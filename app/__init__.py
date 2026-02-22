@@ -132,10 +132,13 @@ def create_app(config_name="development"):
     # Setup logging
     setup_logging(app)
 
-    # Initialize database with auto-creation
-    app.logger.info("Initializing database...")
-    if not init_database(app, db):
-        app.logger.warning("Database initialization completed with warnings. Check logs above.")
+    # Initialize database with auto-creation (skip in testing/CI)
+    if not app.testing:
+        app.logger.info("Initializing database...")
+        if not init_database(app, db):
+            app.logger.warning(
+                "Database initialization completed with warnings. Check logs above."
+            )
 
     # Register error handlers
     from app.middleware.error_handlers import register_error_handlers
