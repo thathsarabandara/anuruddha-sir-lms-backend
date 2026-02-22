@@ -56,8 +56,7 @@ def create_app(config_name='development'):
     from app.routes import health_routes
     app.register_blueprint(health_routes.bp)
     
-    from app.models import user, course  # Import models to register with SQLAlchemy
-
+    from app.models import __all__
     # Setup logging
     setup_logging(app)
     
