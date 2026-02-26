@@ -43,7 +43,7 @@ class NotificationTypePreferences(db.Model):
 
     # Channel Preferences
     email = db.Column(db.Boolean, default=True, nullable=False)
-    sms = db.Column(db.Boolean, default=False, nullable=False)
+    whatsapp = db.Column(db.Boolean, default=False, nullable=False)
     in_app = db.Column(db.Boolean, default=True, nullable=False)
 
     # Timestamps
@@ -64,7 +64,7 @@ class NotificationTypePreferences(db.Model):
             "user_id": self.user_id,
             "notification_type": self.notification_type,
             "email": self.email,
-            "sms": self.sms,
+            "whatsapp": self.whatsapp,
             "in_app": self.in_app,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
