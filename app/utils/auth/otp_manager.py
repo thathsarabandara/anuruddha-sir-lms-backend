@@ -50,3 +50,8 @@ class OTPManager:
     def get_reset_token_expiry_time(hours=1):
         """Get password reset token expiry time (default: 1 hour)"""
         return datetime.utcnow() + timedelta(hours=hours)
+
+    def send_otp_via_email(self, email, otp_code):
+        """Send OTP code via email (placeholder)"""
+        # Implement actual email sending logic here
+        print(f"Sending OTP {otp_code} to email: {email}")
