@@ -400,4 +400,62 @@ class PasswordResetService(BaseService):
             logger.error(f"Password change failed: {str(e)}")
             raise ValidationError(f"Password change failed: {str(e)}")
 
+    @staticmethod
+    def verify_reset_token(reset_token):
+        """
+        Verify if a password reset token is valid and not expired.
+
+        Args:
+            reset_token: Password reset token
+
+        Returns:
+            dict: Token verification status and user email
+
+        Raises:
+            ValidationError: If token is invalid or expired
+        """
+        try:
+            # Get OTP request
+            otp_request = OTPRequest.query.filter_by(
+                verification_token=reset_token, purpose="password_reset"
+            ).first()
+
+            if not otp_request:
+                raise ValidationError("Invalid or expired reset token")
+
+            # Check if expired
+            if OTPManager.check_otp_expiry(otp_request.expires_at):
+                raise ValidationError("Reset token has expired")
+
+            # Check if already used
+            if otp_request.is_used:
+                raise ValidationError("Reset token has already been used")
+
+            # Get user to verify they exist
+            user = User.query.filter_by(user_id=otp_request.user_id).first()
+            if not user:
+                raise ValidationError("User not found")
+
+            # Calculate remaining expiry time
+            remaining_seconds = int(
+                (otp_request.expires_at - datetime.utcnow()).total_seconds()
+            )
+
+            logger.info(f"Reset token verified for {user.email}")
+
+            return {
+                "is_valid": True,
+                "email": user.email,
+                "user_id": user.user_id,
+                "expires_in": remaining_seconds,
+                "message": "Reset token is valid. You can now reset your password.",
+            }
+
+        except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"Reset token verification failed: {str(e)}")
+            raise ValidationError(f"Reset token verification failed: {str(e)}")
+
+
    
