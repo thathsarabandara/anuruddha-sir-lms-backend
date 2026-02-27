@@ -54,7 +54,7 @@ class User(db.Model):
     # Verification Status
     email_verified = db.Column(db.Boolean, default=False, nullable=False, index=True)
     phone_verified = db.Column(db.Boolean, default=False, nullable=False)
-
+    approval_status = db.Column(db.String(30),default="pending",nullable=False,index=True,)
     # Account Status
     is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
 
