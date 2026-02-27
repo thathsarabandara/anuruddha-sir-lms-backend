@@ -63,11 +63,13 @@ def create_app(config_name="development"):
 
     # Register blueprints
     from app.routes import auth_routes, course_routes, health_routes, notification_routes
+    from app.routes import quiz_routes
 
     app.register_blueprint(health_routes.bp)
     app.register_blueprint(auth_routes.bp)
     app.register_blueprint(notification_routes.bp)
     app.register_blueprint(course_routes.bp)
+    app.register_blueprint(quiz_routes.bp)
 
     # Import all models to register them with SQLAlchemy metadata
     # This ensures db.create_all() can properly handle all model relationships
