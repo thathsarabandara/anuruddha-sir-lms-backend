@@ -971,6 +971,34 @@ def _templates():
             ),
             "cta": _cta_button(c["admin"], "{{secure_url}}", "Secure My Account →"),
         },
+        {
+            "notification_type": "account_locked",
+            "subject": "🔒 Your Account Has Been Temporarily Locked",
+            "category": "Administrative & System",
+            "color": c["admin"],
+            "icon": "🔒",
+            "title": "Account Temporarily Locked",
+            "variables": ["recipient_name", "failed_attempts", "ban_duration_hours", "ban_expires_at", "support_url", "platform_url", "unsubscribe_url", "preferences_url", "current_year"],
+            "body": (
+                GREET +
+                '<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">'
+                'For your security, your account has been <strong>temporarily locked</strong> '
+                'due to <strong>{{failed_attempts}} consecutive failed login attempts</strong>.</p>'
+                '<table cellpadding="0" cellspacing="0" style="background:#fff0f0;border-left:4px solid #DC2626;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;">'
+                '<tr><td><p style="margin:0;color:#991b1b;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Lock Details</p>'
+                '<p style="margin:0;color:#333;font-size:14px;line-height:1.7;">'
+                '🔒 <strong>Reason:</strong> Too many failed login attempts<br/>'
+                '❌ <strong>Failed Attempts:</strong> {{failed_attempts}}<br/>'
+                '⏳ <strong>Lock Duration:</strong> {{ban_duration_hours}} hours<br/>'
+                '🕐 <strong>Unlocks At:</strong> {{ban_expires_at}}'
+                '</p></td></tr></table>'
+                '<p style="color:#555555;font-size:14px;line-height:1.7;margin:0 0 8px;">'
+                'If this was not you, your account may be at risk. '
+                'Please contact our support team immediately.</p>'
+                + SIG
+            ),
+            "cta": _cta_button(c["admin"], "{{support_url}}", "Contact Support →"),
+        },
 
         # ═══════════════════════════════════════════════════════════════════
         # 8. INSTRUCTOR-LED TRAINING (ILT)
