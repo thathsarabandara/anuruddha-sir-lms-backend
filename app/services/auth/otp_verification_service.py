@@ -19,7 +19,7 @@ class OTPVerificationService(BaseService):
     """Service for OTP verification"""
 
     @staticmethod
-    def verify_otp(otp_code, verification_token, purpose="email_verification"):
+    def verify_otp(otp_code, verification_token,):
         """
         Verify OTP code for account activation
 
@@ -27,7 +27,6 @@ class OTPVerificationService(BaseService):
             email: User email
             otp_code: OTP code to verify
             verification_token: Verification token
-            purpose: Purpose of OTP verification
 
         Returns:
             dict: User data with verified status
