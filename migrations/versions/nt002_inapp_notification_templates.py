@@ -531,6 +531,22 @@ def _templates():
             ),
             "variables": ["recipient_name", "login_time", "ip_address", "location", "device", "secure_url"],
         },
+        {
+            "notification_type": "account_locked",
+            "subject": "🔒 Account Temporarily Locked",
+            "template_text": (
+                "Hi {{recipient_name}},\n\n"
+                "Your account has been temporarily locked due to too many failed login attempts.\n\n"
+                "LOCK DETAILS\n"
+                "------------\n"
+                "Failed Attempts : {{failed_attempts}}\n"
+                "Lock Duration   : {{ban_duration_hours}} hours\n"
+                "Unlocks At      : {{ban_expires_at}}\n\n"
+                "If this was not you, contact support immediately.\n\n"
+                "ACTION: Contact Support → {{support_url}}"
+            ),
+            "variables": ["recipient_name", "failed_attempts", "ban_duration_hours", "ban_expires_at", "support_url"],
+        },
 
         # ═══════════════════════════════════════════════════════════════════
         # 8. MENTORING & REVIEWS
