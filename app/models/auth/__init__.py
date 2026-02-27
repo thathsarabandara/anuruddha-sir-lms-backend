@@ -3,12 +3,14 @@ Authentication Module Models
 Contains all database models for authentication, authorization, and account management
 """
 
+from app.models.auth.access_token import AccessToken
 from app.models.auth.email_verification_token import EmailVerificationToken
 from app.models.auth.login_failure import LoginFailure
 from app.models.auth.login_history import LoginHistory
 from app.models.auth.otp_request import OTPRequest
 from app.models.auth.password_reset_token import PasswordResetToken
 from app.models.auth.permission import Permission
+from app.models.auth.refresh_token import RefreshToken
 from app.models.auth.role import Role
 from app.models.auth.role_permission import RolePermission
 from app.models.auth.user import User
@@ -27,4 +29,6 @@ __all__ = [
     "LoginHistory",
     "PasswordResetToken",
     "EmailVerificationToken",
+    "AccessToken",
+    "RefreshToken",
 ]
