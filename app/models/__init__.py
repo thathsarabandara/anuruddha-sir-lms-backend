@@ -18,6 +18,17 @@ from app.models.auth import (
     UserRole,
 )
 
+# Import all user-role profile models
+from app.models.users import (
+    StudentProfile,
+    TeacherProfile,
+    UserActivityLog,
+    UserPreferences,
+    UserProfile,
+    UserStatistics,
+    UserSuspensionLog,
+)
+
 # Import all certificates models
 from app.models.certificates import (
     Certificate,
@@ -78,15 +89,6 @@ from app.models.rewards import (
     UserPoints,
 )
 
-# Import all user profile models
-from app.models.users import (
-    UserActivityLog,
-    UserPreferences,
-    UserProfile,
-    UserStatistics,
-    UserSuspensionLog,
-)
-
 __all__ = [
     # Auth Models (12)
     "User",
@@ -100,7 +102,9 @@ __all__ = [
     "LoginHistory",
     "PasswordResetToken",
     "EmailVerificationToken",
-    # Users Models (5)
+    # Users Models (7)
+    "StudentProfile",
+    "TeacherProfile",
     "UserProfile",
     "UserPreferences",
     "UserActivityLog",
