@@ -48,7 +48,7 @@ class User(db.Model):
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=True)
-    profile_picture_url = db.Column(db.Text, nullable=True)
+    profile_picture = db.Column(db.Text, nullable=True)
     bio = db.Column(db.Text, nullable=True)
 
     # Verification Status
