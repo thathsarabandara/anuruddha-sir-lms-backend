@@ -8,7 +8,7 @@ from datetime import datetime
 
 from app import db
 from app.exceptions import AuthenticationError
-from app.models.auth import User
+from app.models.auth import AccessToken, User
 from app.services.base_service import BaseService
 from app.utils.auth import TokenManager
 
@@ -36,7 +36,14 @@ class TokenVerificationService(BaseService):
             AuthenticationError: If token is invalid or cannot be refreshed
         """
         try:
-            # Verify access token
+            # ── Check if access token is revoked in database ──
+            access_token_record = AccessToken.query.filter_by(token=access_token).first()
+            if access_token_record and access_token_record.is_revoked and not access_token_record.expired_at < datetime.utcnow():
+                raise AuthenticationError(
+                    "Access token has been revoked. Please login again."
+                )
+
+            # Verify access token JWT signature
             payload = TokenManager.verify_token(access_token)
 
             if payload:
