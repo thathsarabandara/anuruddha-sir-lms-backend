@@ -16,6 +16,8 @@ from app.models.auth import (
     User,
     UserAccountStatus,
     UserRole,
+    AccessToken,
+    RefreshToken,   
 )
 
 # Import all user-role profile models
@@ -102,6 +104,8 @@ __all__ = [
     "LoginHistory",
     "PasswordResetToken",
     "EmailVerificationToken",
+    "AccessToken",
+    "RefreshToken",
     # Users Models (7)
     "StudentProfile",
     "TeacherProfile",
