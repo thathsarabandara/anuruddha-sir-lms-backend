@@ -55,9 +55,6 @@ class User(db.Model):
     email_verified = db.Column(db.Boolean, default=False, nullable=False, index=True)
     phone_verified = db.Column(db.Boolean, default=False, nullable=False)
     
-    # Account Status
-    is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
-
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
     updated_at = db.Column(
