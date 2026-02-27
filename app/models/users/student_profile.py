@@ -40,9 +40,6 @@ class StudentProfile(db.Model):
         index=True,
     )
 
-    # Contact
-    whatsapp_number = db.Column(db.String(20), nullable=True)
-
     # Academic info
     date_of_birth = db.Column(db.Date, nullable=True)
     grade_level = db.Column(db.String(100), nullable=True)
