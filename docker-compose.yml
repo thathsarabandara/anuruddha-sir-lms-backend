@@ -13,7 +13,7 @@ services:
       FLASK_ENV: ${FLASK_ENV:-development}
       FLASK_APP: main.py
       DEBUG: ${DEBUG:-False}
-      DATABASE_URL: mysql+pymysql://${DB_USER:-lms_user}:${DB_PASSWORD:-lms_user_pass}@mysql:3306/${DB_NAME:-lms_db}
+      DATABASE_URL: mysql+pymysql://lms_user:lms_pass@mysql:3306/lms_db
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
@@ -52,10 +52,10 @@ services:
     image: mysql:latest
     container_name: lms-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-lms_pass}
-      MYSQL_DATABASE: ${DB_NAME:-lms_db}
-      MYSQL_USER: ${DB_USER:-lms_user}
-      MYSQL_PASSWORD: ${DB_USER_PASSWORD:-lms_user_pass}
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: lms_db
+      MYSQL_USER: lms_user
+      MYSQL_PASSWORD: lms_pass
     ports:
       - "3307:3306"
     volumes:
