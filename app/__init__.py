@@ -147,6 +147,10 @@ def create_app(config_name="development"):
                 "Database initialization completed with warnings. Check logs above."
             )
 
+        # Auto-seed empty tables with initial data
+        from app.commands import auto_seed
+        auto_seed(app)
+
     # Register error handlers
     from app.middleware.error_handlers import register_error_handlers
 
