@@ -808,6 +808,33 @@ def _templates():
                 ),
             ),
         },
+        {
+            "notification_type": "account_locked",
+            "subject": "Account Temporarily Locked",
+            "variables": ["recipient_name", "failed_attempts", "ban_duration_hours", "ban_expires_at", "support_url"],
+            "template_text": _wa(
+                english_block=(
+                    "Hi {{recipient_name}}! 🔒\n\n"
+                    "Your account has been *temporarily locked* due to *{{failed_attempts}} consecutive failed login attempts*.\n\n"
+                    "🔒 *Reason:* Too many failed login attempts\n"
+                    "❌ *Failed Attempts:* {{failed_attempts}}\n"
+                    "⏳ *Lock Duration:* {{ban_duration_hours}} hours\n"
+                    "🕐 *Unlocks At:* {{ban_expires_at}}\n\n"
+                    "If this wasn't you, your account may be at risk. Contact support immediately:\n"
+                    "🔗 *Support:* {{support_url}}"
+                ),
+                singlish_block=(
+                    "ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 🔒\n\n"
+                    "ඔබේ ගිණුම *{{failed_attempts}} වාරයක් අසාර්ථක ලොගින් උත්සාහ* නිසා *තාවකාලිකව අවහිර* කෙරිණ.\n\n"
+                    "🔒 *හේතුව:* අසාර්ථක ලොගින් උත්සාහ ගණන ඉක්මවිණ\n"
+                    "❌ *අසාර්ථක උත්සාහ:* {{failed_attempts}}\n"
+                    "⏳ *අවහිර කිරීමේ කාලය:* {{ban_duration_hours}} පැය\n"
+                    "🕐 *නැවත ලොගින් කළ හැකි:* {{ban_expires_at}}\n\n"
+                    "ඔබ නොකළේ නම් ඔබේ ගිණුම අනතුරේ! ඉක්මනින් සහාය ඇමතුම් කරන්න:\n"
+                    "🔗 *සහාය:* {{support_url}}"
+                ),
+            ),
+        },
     ]
 
 
