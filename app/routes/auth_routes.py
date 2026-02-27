@@ -95,6 +95,30 @@ def set_verification_token_cookie(response, verification_token):
 
     return response
 
+def set_password_reset_token_cookie(response, password_reset_token):
+    """
+    Set password reset token as HttpOnly cookie for OTP password reset flow
+
+    Args:
+        response: Flask response object
+        password_reset_token: Password reset token to set in cookie (5 min expiry)
+
+    Returns:
+        Updated response object with password reset token cookie set
+    """
+    is_secure = current_app.config.get("ENV") == "production"
+
+    response[0].set_cookie(
+        "password_reset_token",
+        password_reset_token,
+        max_age=300,  # 5 minutes (OTP expiry)
+        secure=is_secure,
+        httponly=True,
+        samesite="Strict",
+        path="/",
+    )
+
+    return response
 
 # ===================== Registration Endpoints =====================
 
@@ -488,7 +512,7 @@ def logout():
         user_id = request.user_id
 
         # Perform logout
-        logout_data = LogoutService.logout_user(user_id, access_token)
+        logout_data = LogoutService.logout_user(user_id, access_token, refresh_token)
 
         response = success_response(
             data=logout_data,
@@ -530,7 +554,7 @@ def forgot_password():
 
         reset_token, otp_code = PasswordResetService.initiate_password_reset(data["email"])
 
-        return success_response(
+        response = success_response(
             data={
                 "token": reset_token,
                 "expires_in": 3600,
@@ -540,7 +564,42 @@ def forgot_password():
             status_code=200,
         )
 
+        # Set password reset token cookie
+        response = set_password_reset_token_cookie(response, reset_token)
+        return response
     except Exception as e:
+        return error_response(str(e), 400)
+
+
+@bp.route("/verify-reset-token", methods=["GET"])
+@validate_json("token")
+@handle_exceptions
+def verify_reset_token():
+    """
+    Verify password reset token is valid before showing reset password form.
+    
+    Frontend calls this endpoint to validate the reset token before allowing
+    user access to the reset password form.
+
+
+    Returns:
+        200: Reset token is valid
+        400: Invalid, expired, or already used reset token
+    """
+    try:
+        data = request.get_json()
+
+        password_reset_token = request.cookies.get("password_reset_token") or data.get("token")
+
+        verification_data = PasswordResetService.verify_reset_token(password_reset_token)
+
+        return success_response(
+            data=verification_data,
+            message="Reset token is valid",
+            status_code=200,
+        )
+
+    except ValidationError as e:
         return error_response(str(e), 400)
 
 
