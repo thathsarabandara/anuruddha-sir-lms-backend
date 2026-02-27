@@ -10,7 +10,7 @@ from flask import current_app
 
 from app import db
 from app.exceptions import AuthenticationError, ValidationError
-from app.models.auth import LoginHistory, User, UserAccountStatus, role
+from app.models.auth import LoginHistory, User, UserAccountStatus, Role, UserRole
 from app.models.auth.user_role import UserRole
 from app.services.base_service import BaseService
 from app.utils.auth import PasswordManager, SessionManager, TokenManager
@@ -293,12 +293,15 @@ class LoginService(BaseService):
                 account_status.failed_login_attempts = 0
                 account_status.last_failed_attempt_at = None
 
-            # Generate tokens
+            roleid = UserRole.query.filter_by(user_id=user.user_id).first()
+            if roleid:
+                role_name = Role.query.filter_by(role_id=roleid.role_id).first().name
+            # Generate tokens and store them in database
             access_token = TokenManager.generate_access_token(
-                user.user_id, user.email, user.username, "student"  # TODO: Get actual role
+                user.user_id, user.email, user.username, role_name, store_in_db=True
             )
             refresh_token = TokenManager.generate_refresh_token(
-                user.user_id, user.email, user.username
+                user.user_id, user.email, user.username, store_in_db=True
             )
 
             # Update last login
