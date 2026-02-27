@@ -44,8 +44,12 @@ class AuthorizationError(LMSException):
 class ResourceNotFoundError(LMSException):
     """Raised when requested resource is not found"""
 
-    def __init__(self, resource_type, resource_id):
-        message = f"{resource_type} with id {resource_id} not found"
+    def __init__(self, resource_type, resource_id=None):
+        if resource_id is not None:
+            message = f"{resource_type} with id {resource_id} not found"
+        else:
+            # Allow plain message: raise ResourceNotFoundError("Course not found")
+            message = resource_type
         super().__init__(message, status_code=404)
 
 
