@@ -643,6 +643,190 @@ def seed_notification_templates(channel, force):
         logger.error("Template seeding failed: %s", exc, exc_info=True)
 
 
+# ===================== Auto-Seed on Startup =====================
+
+
+def auto_seed(app):
+    """
+    Automatically seed the database with initial data on server startup.
+
+    Checks each critical table and seeds it only if it is empty:
+      1. ``roles``                 — from rb001_seed_roles.py
+      2. ``users`` / superadmin    — from rb002_seed_superadmin.py
+      3. ``notification_templates``— from nt001 / nt002 / nt003 migration files
+
+    This is safe to call on every startup; it is a no-op when data exists.
+    """
+    import importlib.util
+    import os
+
+    migrations_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "migrations", "versions",
+    )
+
+    def _load(filename):
+        path = os.path.join(migrations_dir, filename)
+        spec = importlib.util.spec_from_file_location(filename[:-3], path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    with app.app_context():
+        try:
+            # ── 1. Roles ──────────────────────────────────────────────────
+            if Role.query.count() == 0:
+                app.logger.info("[auto-seed] roles table is empty — seeding roles...")
+                now = datetime.utcnow()
+                for name, description in [
+                    ("superadmin", "Full system access - can manage all aspects of the platform"),
+                    ("admin",      "Administrative access - manages users, courses, and platform settings"),
+                    ("teacher",    "Can create and manage courses, assignments, quizzes, and student progress"),
+                    ("student",    "Can enroll in courses, take quizzes, submit assignments, and view progress"),
+                ]:
+                    db.session.add(Role(
+                        role_id=str(uuid.uuid4()),
+                        role_name=name,
+                        description=description,
+                        created_at=now,
+                    ))
+                db.session.commit()
+                app.logger.info("[auto-seed] ✓ Roles seeded (superadmin, admin, teacher, student)")
+            else:
+                app.logger.debug("[auto-seed] roles table already populated — skipping")
+
+            # ── 2. Superadmin user  ───────────────────────────────────────
+            if User.query.count() == 0:
+                app.logger.info("[auto-seed] users table is empty — seeding default superadmin...")
+                superadmin_role = Role.query.filter_by(role_name="superadmin").first()
+                if superadmin_role:
+                    now = datetime.utcnow()
+                    uid = str(uuid.uuid4())
+                    user = User(
+                        user_id=uid,
+                        username="superadmin_admin",
+                        email="superadmin@lms.com",
+                        password_hash=PasswordManager.hash_password("SuperAdmin@123"),
+                        first_name="Super",
+                        last_name="Admin",
+                        bio="System Administrator with full access",
+                        email_verified=True,
+                        phone_verified=False,
+                        is_active=True,
+                        created_at=now,
+                        updated_at=now,
+                    )
+                    status = UserAccountStatus(
+                        user_id=uid,
+                        is_active=True,
+                        is_banned=False,
+                        approval_status="approved",
+                        created_at=now,
+                        updated_at=now,
+                    )
+                    role_link = UserRole(
+                        user_role_id=str(uuid.uuid4()),
+                        user_id=uid,
+                        role_id=superadmin_role.role_id,
+                        assigned_at=now,
+                    )
+                    db.session.add_all([user, status, role_link])
+                    db.session.commit()
+                    app.logger.info(
+                        "[auto-seed] ✓ Default superadmin created "
+                        "(superadmin@lms.com / SuperAdmin@123) — CHANGE PASSWORD!"
+                    )
+                else:
+                    app.logger.warning(
+                        "[auto-seed] superadmin role not found; skipping user seed"
+                    )
+            else:
+                app.logger.debug("[auto-seed] users table already populated — skipping")
+
+            # ── 3. Notification templates ─────────────────────────────────
+            from app.models.notifications.notification_template import NotificationTemplate
+
+            if NotificationTemplate.query.count() == 0:
+                app.logger.info(
+                    "[auto-seed] notification_templates table is empty — seeding templates..."
+                )
+                now = datetime.utcnow()
+                total = 0
+
+                # Email
+                m = _load("nt001_email_notification_templates.py")
+                for tpl in m._templates():
+                    db.session.add(NotificationTemplate(
+                        notification_type=tpl["notification_type"],
+                        channel="email",
+                        subject=tpl.get("subject"),
+                        template_html=m._build_html(
+                            color=tpl["color"],
+                            icon=tpl["icon"],
+                            category=tpl["category"],
+                            title=tpl["title"],
+                            body_html=tpl["body"],
+                            cta_html=tpl.get("cta", ""),
+                        ),
+                        template_text=None,
+                        variables=tpl.get("variables", []),
+                        version=1,
+                        is_active=True,
+                        created_at=now,
+                        updated_at=now,
+                    ))
+                    total += 1
+
+                # In-App
+                m = _load("nt002_inapp_notification_templates.py")
+                for tpl in m._templates():
+                    db.session.add(NotificationTemplate(
+                        notification_type=tpl["notification_type"],
+                        channel="in_app",
+                        subject=tpl.get("subject"),
+                        template_html=None,
+                        template_text=tpl.get("template_text"),
+                        variables=tpl.get("variables", []),
+                        version=1,
+                        is_active=True,
+                        created_at=now,
+                        updated_at=now,
+                    ))
+                    total += 1
+
+                # WhatsApp
+                m = _load("nt003_whatsapp_notification_templates.py")
+                for tpl in m._templates():
+                    db.session.add(NotificationTemplate(
+                        notification_type=tpl["notification_type"],
+                        channel="whatsapp",
+                        subject=tpl.get("subject"),
+                        template_html=None,
+                        template_text=tpl.get("template_text"),
+                        variables=tpl.get("variables", []),
+                        version=1,
+                        is_active=True,
+                        created_at=now,
+                        updated_at=now,
+                    ))
+                    total += 1
+
+                db.session.commit()
+                app.logger.info(
+                    "[auto-seed] ✓ Notification templates seeded (%d rows)", total
+                )
+            else:
+                app.logger.debug(
+                    "[auto-seed] notification_templates already populated — skipping"
+                )
+
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.error(
+                "[auto-seed] Failed during auto-seed: %s", exc, exc_info=True
+            )
+
+
 def register_db_commands(app):
     """Register database CLI commands with Flask app."""
     app.cli.add_command(db_cli)
