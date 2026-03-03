@@ -11,20 +11,25 @@ from flask_cors import CORS
 
 def configure_cors(app, origins=None):
     """
-    Configure CORS for Flask application
+    Configure CORS for Flask application with credentials support
 
     Args:
         app: Flask application instance
         origins: List of allowed origins (default: localhost and local IPs)
+    
+    Important: When credentials are included (cookies, auth headers), 
+    the Access-Control-Allow-Origin cannot be '*' — specific origins must be listed.
     """
     if origins is None:
         origins = [
             "http://localhost:3000",
-            "http://localhost:8000",
+            "http://localhost:5173",
             "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "http://localhost:8000",
             "http://127.0.0.1:8000",
             "https://localhost:3000",
-            "https://localhost:8000",
+            "https://localhost:5173",
         ]
 
         # In production, add actual domain
@@ -44,16 +49,14 @@ def configure_cors(app, origins=None):
                 "origins": origins,
                 "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
-                "expose_headers": ["Content-Range", "X-Content-Range"],
-                "supports_credentials": True,
+                "expose_headers": ["Content-Range", "X-Content-Range", "X-Total-Count"],
+                "supports_credentials": True,  # CRITICAL: Enables Access-Control-Allow-Credentials: true
                 "max_age": 3600,
             }
         },
-        expose_headers=["Content-Type"],
-        allow_headers=["Content-Type"],
-        send_wildcard=False,
-        automatic_options=True,
+        supports_credentials=True,  # CRITICAL: Enables credentials in cross-origin requests
         vary_header=True,
+        automatic_options=True,
     )
 
 
