@@ -674,6 +674,21 @@ def auto_seed(app):
 
     with app.app_context():
         try:
+            # Guard: verify that core tables exist before querying them.
+            # If migrations haven't run yet, skip seeding gracefully.
+            from sqlalchemy import inspect as sa_inspect
+            inspector = sa_inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+            required_tables = {"roles", "users", "notification_templates"}
+            missing = required_tables - set(existing_tables)
+            if missing:
+                app.logger.warning(
+                    "[auto-seed] Skipping — the following tables do not exist yet: %s. "
+                    "Run 'flask db upgrade' or allow db.create_all() to finish first.",
+                    ", ".join(sorted(missing)),
+                )
+                return
+
             # ── 1. Roles ──────────────────────────────────────────────────
             if Role.query.count() == 0:
                 app.logger.info("[auto-seed] roles table is empty — seeding roles...")
@@ -712,7 +727,6 @@ def auto_seed(app):
                         bio="System Administrator with full access",
                         email_verified=True,
                         phone_verified=False,
-                        is_active=True,
                         created_at=now,
                         updated_at=now,
                     )
@@ -720,8 +734,6 @@ def auto_seed(app):
                         user_id=uid,
                         is_active=True,
                         is_banned=False,
-                        approval_status="approved",
-                        created_at=now,
                         updated_at=now,
                     )
                     role_link = UserRole(
