@@ -1,0 +1,25 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 📩
+
+Your enrollment request for *{{course_name}}* has been *{{status}}*.
+
+📘 *Course:* {{course_name}}
+✅ *Status:* {{status}}
+💬 *Reason:* {{reason}}
+
+🔗 *View course:* {{course_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට 📩
+
+ඔබගේ *{{course_name}}* ලියාපදිංචි ඉල්ලීම *{{status}}* විය! 📋
+
+📘 *පාඨමාලාව:* {{course_name}}
+✅ *තත්ත්වය:* {{status}}
+💬 *හේතුව:* {{reason}}
+
+🔗 *පාඨමාලාව බලන්න:* {{course_url}}
+{% endblock %}
