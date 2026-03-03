@@ -38,6 +38,9 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p /app/logs /app/uploads
 
+# Make the entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/api/v1/health')" || exit 1
@@ -45,5 +48,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 5000
 
-# Run the application with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--worker-class", "gevent", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "main:app"]
+# Use the entrypoint script which:
+#  1. Runs DB init + seed ONCE (before workers start)
+#  2. Launches gunicorn with SKIP_AUTO_INIT=true so workers skip re-init
+ENTRYPOINT ["/app/entrypoint.sh"]
