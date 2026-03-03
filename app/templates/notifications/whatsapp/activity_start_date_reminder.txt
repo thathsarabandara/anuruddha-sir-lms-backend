@@ -1,0 +1,31 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hey {{recipient_name}}! 📅
+
+Your course activity *{{activity_name}}* is starting very soon!
+
+📘 *Course:* {{course_name}}
+🎯 *Activity:* {{activity_name}}
+📅 *Starts:* {{start_date}}
+⏳ *Starts In:* {{time_until_start}}
+
+Get ready and be on time! 🙌
+
+🔗 *View activity:* {{activity_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 📅
+
+*{{activity_name}}* පන්තිය ළං වෙමින් ඇත! සූදානම් වන්න!
+
+📘 *පාඨමාලාව:* {{course_name}}
+🎯 *පන්තිය:* {{activity_name}}
+📅 *ආරම්භ:* {{start_date}}
+⏳ *ඉතිරි කාලය:* {{time_until_start}}
+
+ප්‍රමාද නොවෙන්න! 😄
+
+🔗 *බලන්න:* {{activity_url}}
+{% endblock %}
