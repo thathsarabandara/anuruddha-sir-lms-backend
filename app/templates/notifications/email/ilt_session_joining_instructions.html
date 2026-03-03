@@ -1,0 +1,16 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#0D9488" %}
+{% set icon = "📋" %}
+{% set category = "Instructor-Led Training" %}
+{% set title = "Session Joining Instructions" %}
+{% set subject = "📋 Joining Instructions for {{session_name}}" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p><p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Here are the joining instructions for your upcoming session <strong>{{session_name}}</strong>.</p><table cellpadding="0" cellspacing="0" style="background:#f0fdfa;border-left:4px solid #0D9488;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#333;font-size:14px;line-height:1.7;">📅 <strong>Date & Time:</strong> {{session_date}} at {{session_time}}<br/>📍 <strong>Venue / Link:</strong> {{venue}}<br/>🔑 <strong>Meeting ID:</strong> {{meeting_id}}<br/>🔐 <strong>Passcode:</strong> {{passcode}}<br/>📋 <strong>Instructions:</strong> {{instructions}}</p></td></tr></table><p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Warm regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{join_url}}" style="display:inline-block;background:#0D9488;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Join Now →</a>
+</td></tr>
+{% endblock %}
