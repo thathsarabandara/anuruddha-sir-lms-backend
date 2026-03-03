@@ -1,0 +1,16 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#0D9488" %}
+{% set icon = "🎯" %}
+{% set category = "Instructor-Led Training" %}
+{% set title = "Sign Up for Instructor-Led Training" %}
+{% set subject = "🎯 Don't miss out — Sign up for {{session_name}}" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p><p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">An instructor-led training session is available and has limited seats. Register now to secure your spot!</p><table cellpadding="0" cellspacing="0" style="background:#f0fdfa;border-left:4px solid #0D9488;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#333;font-size:14px;line-height:1.7;">🎯 <strong>Session:</strong> {{session_name}}<br/>📅 <strong>Date:</strong> {{session_date}}<br/>💺 <strong>Available Seats:</strong> {{available_seats}}</p></td></tr></table><p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Warm regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{session_url}}" style="display:inline-block;background:#0D9488;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Register Now →</a>
+</td></tr>
+{% endblock %}
