@@ -1,0 +1,15 @@
+{% set subject = "🏆 Quiz Result Available — {{quiz_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your quiz result for {{quiz_name}} is now ready.
+
+DETAILS
+-------
+Quiz        : {{quiz_name}}
+Course      : {{course_name}}
+Score       : {{score}} / {{max_score}} ({{percentage}}%)
+Result      : {{passed}}
+
+ACTION: View result → {{quiz_url}}
+{% endblock %}
