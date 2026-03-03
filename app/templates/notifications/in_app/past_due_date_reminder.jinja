@@ -1,0 +1,17 @@
+{% set subject = "🔴 Overdue — {{assignment_name}} ({{overdue_by}} late)" %}
+{% block body %}
+Hi {{recipient_name}},
+
+The deadline for {{assignment_name}} has passed.
+
+DETAILS
+-------
+Assignment   : {{assignment_name}}
+Course       : {{course_name}}
+Was Due      : {{due_date}}
+Overdue By   : {{overdue_by}}
+
+Contact your instructor if you have extenuating circumstances.
+
+ACTION: View assignment → {{submission_url}}
+{% endblock %}
