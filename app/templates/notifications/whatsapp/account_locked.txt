@@ -1,0 +1,29 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 🔒
+
+Your account has been *temporarily locked* due to *{{failed_attempts}} consecutive failed login attempts*.
+
+🔒 *Reason:* Too many failed login attempts
+❌ *Failed Attempts:* {{failed_attempts}}
+⏳ *Lock Duration:* {{ban_duration_hours}} hours
+🕐 *Unlocks At:* {{ban_expires_at}}
+
+If this wasn't you, your account may be at risk. Contact support immediately:
+🔗 *Support:* {{support_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 🔒
+
+ඔබේ ගිණුම *{{failed_attempts}} වාරයක් අසාර්ථක ලොගින් උත්සාහ* නිසා *තාවකාලිකව අවහිර* කෙරිණ.
+
+🔒 *හේතුව:* අසාර්ථක ලොගින් උත්සාහ ගණන ඉක්මවිණ
+❌ *අසාර්ථක උත්සාහ:* {{failed_attempts}}
+⏳ *අවහිර කිරීමේ කාලය:* {{ban_duration_hours}} පැය
+🕐 *නැවත ලොගින් කළ හැකි:* {{ban_expires_at}}
+
+ඔබ නොකළේ නම් ඔබේ ගිණුම අනතුරේ! ඉක්මනින් සහාය ඇමතුම් කරන්න:
+🔗 *සහාය:* {{support_url}}
+{% endblock %}
