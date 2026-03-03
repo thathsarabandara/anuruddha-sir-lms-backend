@@ -1,0 +1,23 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ⭐
+
+*{{reviewer_name}}* submitted a new review for *{{course_name}}*.
+
+⭐ *Rating:* {{rating}} / 5
+💬 *Preview:* _"{{review_preview}}"_
+
+🔗 *Read full review:* {{review_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! ⭐
+
+*{{reviewer_name}}* *{{course_name}}* සඳහා නව සමාලෝචනයක් ඉදිරිපත් කරන ලදී!
+
+⭐ *ශ්‍රේණිය:* {{rating}} / 5
+💬 *සමාලෝචනය:* _"{{review_preview}}"_
+
+🔗 *සම්පූර්ණ සමාලෝචනය:* {{review_url}}
+{% endblock %}
