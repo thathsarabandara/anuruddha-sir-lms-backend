@@ -1,0 +1,27 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ✅
+
+Your booking for *{{session_name}}* has been *{{booking_status}}*.
+
+📅 *Date:* {{session_date}}
+🕐 *Time:* {{session_time}}
+📍 *Venue:* {{venue}}
+👤 *Instructor:* {{instructor_name}}
+
+🔗 *View booking:* {{booking_url}}
+{% endblock %}
+
+{% block singlish %}
+{{recipient_name}} ට! ✅
+
+*{{session_name}}* සත්කාරය සඳහා ඔබේ ලියාපදිංචිය *{{booking_status}}* විය!
+
+📅 *දිනය:* {{session_date}}
+🕐 *වේලාව:* {{session_time}}
+📍 *ස්ථානය:* {{venue}}
+👤 *ගුරුවරයා:* {{instructor_name}}
+
+🔗 *ලියාපදිංචිය:* {{booking_url}}
+{% endblock %}
