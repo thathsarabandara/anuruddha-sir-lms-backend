@@ -1,0 +1,25 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ✉️
+
+*{{inviter_name}}* has invited you to join *{{course_name}}*Anuruddha Sir on LMS Platform.
+
+Tap the link below to accept the invitation and get started!
+
+✅ *Accept here:* {{registration_url}}
+
+_If this invitation wasn't for you, simply ignore this message._
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට 📨
+
+*{{inviter_name}}* ඔබව *{{course_name}}* පාඨමාලාවට ආරාධනා කළේ! 🎓
+
+ආරාධනාව පිළිගැනීමට සබැඳිය ක්ලික් කරන්න!
+
+✅ *පිළිගැනීමට:* {{registration_url}}
+
+_ඔබ වෙනුවෙන් ආරාධනාවක් නොමැති නම් නොසලකා හරින්න._
+{% endblock %}
