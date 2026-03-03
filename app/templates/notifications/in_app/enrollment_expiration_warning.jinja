@@ -1,0 +1,16 @@
+{% set subject = "⏳ Enrollment Expiring in {{days_remaining}} Days — {{course_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your enrollment in {{course_name}} will expire soon.
+
+DETAILS
+-------
+Course          : {{course_name}}
+Expiry Date     : {{expiry_date}}
+Days Remaining  : {{days_remaining}}
+
+Complete your lessons before the expiry date, or renew your access to continue.
+
+ACTION: Renew enrollment → {{renew_url}}
+{% endblock %}
