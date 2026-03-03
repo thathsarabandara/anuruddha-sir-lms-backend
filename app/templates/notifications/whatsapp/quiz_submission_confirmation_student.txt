@@ -1,0 +1,28 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Well done, {{recipient_name}}! ✅
+
+Your quiz *{{quiz_name}}* has been submitted successfully!
+
+📘 *Course:* {{course_name}}
+🕐 *Submitted:* {{submitted_at}}
+❓ *Total Questions:* {{total_questions}}
+
+Results will be available once grading is complete. Good luck! 🤞
+
+🔗 *View submission:* {{quiz_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට 🎉
+
+*{{quiz_name}}* ප්‍රශ්නාවලිය සාර්ථකව ඉදිරිපත් කර ඇත!
+
+📘 *පාඨමාලාව:* {{course_name}}
+🕐 *ඉදිරිපත් කළ:* {{submitted_at}}
+
+ප්‍රතිඵල ලැබූ සැනින් දැනුම් දෙනු ලැ‍බේ. ශුභ පැතුම්! 🤞
+
+🔗 *බලන්න:* {{quiz_url}}
+{% endblock %}
