@@ -1,0 +1,16 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#2563EB" %}
+{% set icon = "💬" %}
+{% set category = "Communication & Collaboration" %}
+{% set title = "New Forum Reply" %}
+{% set subject = "💬 New reply in '{{forum_topic}}' — {{course_name}}" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p><p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;"><strong>{{poster_name}}</strong> replied to the discussion <strong>{{forum_topic}}</strong>.</p><table cellpadding="0" cellspacing="0" style="background:#eff6ff;border-left:4px solid #2563EB;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#1e40af;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Reply Preview</p><p style="margin:0;color:#333;font-size:14px;line-height:1.7;font-style:italic;">"{{reply_preview}}"</p></td></tr></table><p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Warm regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{forum_url}}" style="display:inline-block;background:#2563EB;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Join Discussion →</a>
+</td></tr>
+{% endblock %}
