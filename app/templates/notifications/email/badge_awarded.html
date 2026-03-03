@@ -1,0 +1,16 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#059669" %}
+{% set icon = "🏅" %}
+{% set category = "Achievements & Feedback" %}
+{% set title = "Badge Awarded" %}
+{% set subject = "🏅 You've earned the '{{badge_name}}' badge!" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p><p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Congratulations! You have earned a new badge for your outstanding performance.</p><table cellpadding="0" cellspacing="0" style="background:#ecfdf5;border-left:4px solid #059669;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#065f46;font-size:16px;font-weight:700;margin-bottom:6px;">🏅 {{badge_name}}</p><p style="margin:0;color:#333;font-size:14px;line-height:1.7;">📝 <strong>Description:</strong> {{badge_description}}<br/>📘 <strong>Earned in:</strong> {{course_name}}<br/>📅 <strong>Awarded:</strong> {{awarded_at}}</p></td></tr></table><p style="color:#555555;font-size:14px;line-height:1.7;margin:0 0 8px;">Keep up the great work and continue collecting badges!</p><p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Warm regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{badges_url}}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">View All Badges →</a>
+</td></tr>
+{% endblock %}
