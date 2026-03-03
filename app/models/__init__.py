@@ -5,6 +5,7 @@ All SQLAlchemy models should be imported here for migration purposes
 
 # Import all authentication models
 from app.models.auth import (
+    User,
     EmailVerificationToken,
     LoginFailure,
     LoginHistory,
@@ -13,7 +14,6 @@ from app.models.auth import (
     Permission,
     Role,
     RolePermission,
-    User,
     UserAccountStatus,
     UserRole,
     AccessToken,
