@@ -59,6 +59,9 @@ class Config:
     # Application Configuration
     APP_NAME = "LMS Backend"
     APP_VERSION = "1.0.0"
+    
+    # Frontend Configuration
+    FRONTEND_URL = os.environ.get("FRONTEND_URL") or "http://localhost:5173"
 
 
 class DevelopmentConfig(Config):
