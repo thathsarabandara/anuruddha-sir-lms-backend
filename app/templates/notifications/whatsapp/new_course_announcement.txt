@@ -1,0 +1,25 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+📢 Attention {{recipient_name}}!
+
+*{{posted_by}}* made a new announcement in *{{course_name}}*.
+
+📌 *{{announcement_title}}*
+_{{announcement_preview}}_
+
+🔗 *Read full announcement:* {{announcement_url}}
+{% endblock %}
+
+{% block singlish %}
+📢 ආදරණීය පුතා/දියණිය {{recipient_name}} ට!
+
+*{{posted_by}}* *{{course_name}}* ගෙන නිවේදනයක් ලියූ!
+
+📌 *{{announcement_title}}*
+_{{announcement_preview}}_
+
+කරුණාකර කියවා ගන්න. 🙏
+
+🔗 *සම්පූර්ණ නිවේදනය:* {{announcement_url}}
+{% endblock %}
