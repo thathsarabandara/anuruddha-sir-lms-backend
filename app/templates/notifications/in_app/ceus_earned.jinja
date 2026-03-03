@@ -1,0 +1,14 @@
+{% set subject = "📚 {{ceu_credits}} CEU(s) Earned — {{course_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+You have earned {{ceu_credits}} Continuing Education Unit(s) for your activity in {{course_name}}.
+
+DETAILS
+-------
+Credits Earned  : {{ceu_credits}}
+Course          : {{course_name}}
+Total CEUs      : {{total_ceus}}
+
+ACTION: View CEU transcript → {{ceus_url}}
+{% endblock %}
