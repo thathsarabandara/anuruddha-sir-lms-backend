@@ -1,0 +1,15 @@
+{% set subject = "📝 New Submission — {{assignment_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{student_name}} has submitted an assignment for your review.
+
+DETAILS
+-------
+Student     : {{student_name}}
+Course      : {{course_name}}
+Assignment  : {{assignment_name}}
+Submitted   : {{submitted_at}}
+
+ACTION: Review submission → {{submission_url}}
+{% endblock %}
