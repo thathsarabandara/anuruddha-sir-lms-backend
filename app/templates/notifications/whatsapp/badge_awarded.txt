@@ -1,0 +1,29 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Congratulations, {{recipient_name}}! 🏅
+
+You've earned the *{{badge_name}}* badge — amazing achievement!
+
+📝 *Description:* {{badge_description}}
+📘 *Earned In:* {{course_name}}
+📅 *Awarded:* {{awarded_at}}
+
+Keep up the fantastic work and collect more badges! 🌟
+
+🔗 *View badges:* {{badges_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට සුභ පැතුම් 🏅🎉
+
+ඔබට *{{badge_name}}* ත්‍යාගය ලැබිණ! විශ්මිත ජයග්‍රහණයක්! 💪
+
+📝 *විස්තරය:* {{badge_description}}
+📘 *ලැබිණේ:* {{course_name}} හිදී
+📅 *ලැබිණ:* {{awarded_at}}
+
+අපූරු වැඩ දිගටම කරගෙන ගොස් තවත් ලාංඡන එකතු කරන්න පුළුවන්! 😄🌟
+
+🔗 *ත්‍යාග බලන්න:* {{badges_url}}
+{% endblock %}
