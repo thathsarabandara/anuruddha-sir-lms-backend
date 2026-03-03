@@ -1,0 +1,14 @@
+{% set subject = "🔄 Software Update Available — v{{version}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+A new software update (v{{version}}) is available for the LMS Platform.
+
+DETAILS
+-------
+Version                : {{version}}
+Release Notes          : {{release_notes}}
+Scheduled Maintenance  : {{scheduled_maintenance}}
+
+ACTION: View update details → {{update_url}}
+{% endblock %}
