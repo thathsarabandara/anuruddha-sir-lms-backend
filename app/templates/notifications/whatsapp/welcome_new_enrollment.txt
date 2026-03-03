@@ -1,0 +1,25 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Welcome aboard, {{recipient_name}}! 🚀
+
+We're so glad to have you in *{{course_name}}*. Your journey starts now — let's make it count!
+
+👤 *Instructor:* {{instructor_name}}
+
+💡 Tip: Stay consistent, track your progress, and don't hesitate to ask questions.
+
+▶️ *Start your first lesson:* {{first_lesson_url}}
+{% endblock %}
+
+{% block singlish %}
+ආයුබෝවන් {{recipient_name}}! 🎉
+
+ඔබ *{{course_name}}* පාඨමාලාවට සම්බන්ධ වීම ගැන අපි ගොඩක් සතුටු වෙනවා. 🙌
+
+👤 *ගුරුවරයා:* {{instructor_name}}
+
+💡 ඉඟිය: දිනපතා කාලසටහනක් සකසා ඉගෙනීම ඉදිරියට ගෙන යන්න. 😄
+
+▶️ *පළමු පාඩමට යන්න:* {{first_lesson_url}}
+{% endblock %}
