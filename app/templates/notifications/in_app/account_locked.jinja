@@ -1,0 +1,16 @@
+{% set subject = "🔒 Account Temporarily Locked" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your account has been temporarily locked due to too many failed login attempts.
+
+LOCK DETAILS
+------------
+Failed Attempts : {{failed_attempts}}
+Lock Duration   : {{ban_duration_hours}} hours
+Unlocks At      : {{ban_expires_at}}
+
+If this was not you, contact support immediately.
+
+ACTION: Contact Support → {{support_url}}
+{% endblock %}
