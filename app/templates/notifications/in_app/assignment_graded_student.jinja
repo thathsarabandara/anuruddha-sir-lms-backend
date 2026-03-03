@@ -1,0 +1,15 @@
+{% set subject = "✅ Assignment Graded — {{assignment_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your assignment has been graded. Check your result below.
+
+DETAILS
+-------
+Assignment  : {{assignment_name}}
+Course      : {{course_name}}
+Grade       : {{grade}} / {{max_grade}}
+Feedback    : {{feedback}}
+
+ACTION: View feedback → {{submission_url}}
+{% endblock %}
