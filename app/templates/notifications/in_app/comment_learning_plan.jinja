@@ -1,0 +1,12 @@
+{% set subject = "💬 New Comment on Your Learning Plan" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{commenter_name}} commented on your learning plan '{{learning_plan_name}}'.
+
+COMMENT PREVIEW
+---------------
+"{{comment_preview}}"
+
+ACTION: View comment → {{plan_url}}
+{% endblock %}
