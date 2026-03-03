@@ -1,0 +1,13 @@
+{% set subject = "💬 Added to Conversation — {{conversation_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{added_by}} has added you to the conversation '{{conversation_name}}'.
+
+DETAILS
+-------
+Conversation   : {{conversation_name}}
+Participants   : {{participants}}
+
+ACTION: Join conversation → {{conversation_url}}
+{% endblock %}
