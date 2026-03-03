@@ -1,0 +1,14 @@
+{% set subject = "Enrollment Request {{status}} — {{course_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your enrollment request for {{course_name}} has been {{status}}.
+
+DETAILS
+-------
+Course   : {{course_name}}
+Status   : {{status}}
+Reason   : {{reason}}
+
+ACTION: View course → {{course_url}}
+{% endblock %}
