@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f8;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);max-width:600px;">
+
+          <!-- HEADER -->
+          <tr>
+            <td style="background:{{ theme_color }};padding:28px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <p style="margin:0;color:rgba(255,255,255,0.75);font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;">{{ category }}</p>
+                    <h1 style="margin:6px 0 0;color:#ffffff;font-size:22px;font-weight:700;line-height:1.3;">{{ icon }}&nbsp;&nbsp;{{ title }}</h1>
+                  </td>
+                  <td align="right" style="vertical-align:top;">
+                    <p style="margin:0;color:rgba(255,255,255,0.60);font-size:12px;">Anuruddha Sir LMS Platform</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- BODY -->
+          <tr>
+            <td style="padding:36px 40px 28px;">
+              {% block body %}{% endblock %}
+            </td>
+          </tr>
+
+          <!-- CTA (optional) -->
+          {% block cta %}{% endblock %}
+
+          <!-- DIVIDER -->
+          <tr>
+            <td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #eaeaea;margin:0;" /></td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="padding:24px 40px;background:#fafafa;">
+              <p style="color:#aaaaaa;font-size:11px;margin:0 0 6px;line-height:1.6;">
+                This is an automated notification from <strong style="color:#888;">Anuruddha Sir - LMS Platform</strong>.
+                Please do not reply to this email.
+              </p>
+              <p style="color:#aaaaaa;font-size:11px;margin:0;line-height:1.6;">
+                <a href="{{ platform_url }}" style="color:{{ theme_color }};text-decoration:none;">Visit Platform</a>
+                &nbsp;·&nbsp;
+                <a href="{{ unsubscribe_url }}" style="color:{{ theme_color }};text-decoration:none;">Unsubscribe</a>
+                &nbsp;·&nbsp;
+                <a href="{{ preferences_url }}" style="color:{{ theme_color }};text-decoration:none;">Notification Preferences</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Bottom stamp -->
+        <p style="color:#cccccc;font-size:10px;margin:20px 0 0;text-align:center;">
+          &copy; {{ current_year }} Anuruddha Sir - LMS Platform. All rights reserved.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
