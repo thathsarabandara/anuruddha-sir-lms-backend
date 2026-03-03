@@ -1,0 +1,15 @@
+{% set subject = "⭐ New Review — {{course_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{reviewer_name}} submitted a new review for {{course_name}}.
+
+DETAILS
+-------
+Course    : {{course_name}}
+Reviewer  : {{reviewer_name}}
+Rating    : {{rating}} / 5
+Preview   : "{{review_preview}}"
+
+ACTION: Read full review → {{review_url}}
+{% endblock %}
