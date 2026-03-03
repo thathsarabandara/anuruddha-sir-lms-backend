@@ -1,0 +1,27 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ⚠️
+
+Your quiz attempt window for *{{quiz_name}}* has expired.
+
+📘 *Course:* {{course_name}}
+📅 *Was Due:* {{due_date}}
+
+Please contact your instructor if you believe this is an error.
+
+🔗 *View quiz:* {{quiz_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! ⚠️
+
+*{{quiz_name}}* ප්‍රශ්නාවලිය ආරම්භ කිරීමේ කාලසීමාව ඉකුත් විය!
+
+📘 *පාඨමාලාව:* {{course_name}}
+📅 *කාලසීමාව:* {{due_date}}
+
+ගැටළුවක් ඇත්නම් ගුරුවරයාගෙන් අහන්න! 🙏
+
+🔗 *ප්‍රශ්නාවලිය බලන්න:* {{quiz_url}}
+{% endblock %}
