@@ -1,0 +1,17 @@
+{% set subject = "🚨 CRITICAL ERROR DETECTED" %}
+{% block body %}
+Hi {{recipient_name}},
+
+A critical error has been detected on the platform and requires IMMEDIATE attention.
+
+ERROR REPORT
+------------
+Error Type         : {{error_type}}
+Message            : {{error_message}}
+Time               : {{error_time}}
+Affected Service   : {{affected_service}}
+
+Please investigate and resolve this issue as soon as possible.
+
+ACTION: View error details → {{error_url}}
+{% endblock %}
