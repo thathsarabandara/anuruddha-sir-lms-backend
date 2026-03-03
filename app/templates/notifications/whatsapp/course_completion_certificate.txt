@@ -1,0 +1,27 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Amazing job, {{recipient_name}}! 🎓🎉
+
+You successfully completed *{{course_name}}*! Your certificate is ready to download.
+
+📅 *Completed On:* {{completion_date}}
+🔖 *Certificate ID:* {{certificate_id}}
+
+you deserve the recognition! 🌟
+
+🔗 *Download certificate:* {{certificate_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}}!! 🎓🎉
+
+ඔබ *{{course_name}}* පාඨමාලාව සාර්ථකව සම්පූර්ණ කළා! ඔබගේ සහතිකය බාගත කිරීමට සූදානම්.
+
+📅 *සම්පූර්ණ කළ:* {{completion_date}}
+🔖 *සහතිකය ID:* {{certificate_id}}
+
+ඔබ පිළිගැනීමට සුදුසුයි! 💪🌟
+
+🔗 *සහතිකය බාගත:* {{certificate_url}}
+{% endblock %}
