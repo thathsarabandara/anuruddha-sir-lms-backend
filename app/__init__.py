@@ -50,15 +50,38 @@ def create_app(config_name="development"):
     migrate.init_app(app, db)
 
     # Enable CORS
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+    
+    # Add production origins if in production
+    if app.config.get("ENV") == "production":
+        allowed_origins.extend(
+            [
+                "https://yourdomain.com",
+                "https://www.yourdomain.com",
+                "https://api.yourdomain.com",
+            ]
+        )
+    
     CORS(
         app,
         resources={
             r"/api/*": {
-                "origins": ["*"],
+                "origins": allowed_origins,
                 "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
+                "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+                "expose_headers": ["Content-Range", "X-Content-Range"],
+                "supports_credentials": True,
+                "max_age": 3600,
             }
         },
+        supports_credentials=True,
     )
 
     # Register blueprints
@@ -74,6 +97,7 @@ def create_app(config_name="development"):
     # Import all models to register them with SQLAlchemy metadata
     # This ensures db.create_all() can properly handle all model relationships
     from app.models import (  # noqa: F401
+        User,
         Achievement,
         AttemptAnswer,
         Certificate,
@@ -122,7 +146,6 @@ def create_app(config_name="development"):
         RolePermission,
         Streak,
         Transaction,
-        User,
         UserAccountStatus,
         UserAchievement,
         UserActivityLog,
@@ -134,22 +157,38 @@ def create_app(config_name="development"):
         UserSuspensionLog,
         StudentProfile,
         TeacherProfile,
+        AccessToken,
+        RefreshToken,
     )
 
     # Setup logging
     setup_logging(app)
 
-    # Initialize database with auto-creation (skip in testing/CI)
-    if not app.testing:
+    # Initialize database with auto-creation (skip in testing/CI or when the
+    # Docker entrypoint has already handled init before gunicorn workers fork).
+    skip_init = os.environ.get("SKIP_AUTO_INIT", "false").lower() == "true"
+
+    if not app.testing and not skip_init:
         app.logger.info("Initializing database...")
-        if not init_database(app, db):
+        db_ready = init_database(app, db)
+        if not db_ready:
             app.logger.warning(
                 "Database initialization completed with warnings. Check logs above."
             )
 
-        # Auto-seed empty tables with initial data
-        from app.commands import auto_seed
-        auto_seed(app)
+        # Auto-seed empty tables with initial data (only when DB is ready)
+        if db_ready:
+            from app.commands import auto_seed
+            auto_seed(app)
+        else:
+            app.logger.warning(
+                "Skipping auto-seed: database tables may not be ready yet."
+            )
+    elif skip_init:
+        app.logger.info(
+            "Skipping DB init/seed (SKIP_AUTO_INIT=true) – "
+            "already handled by entrypoint before workers started."
+        )
 
     # Register error handlers
     from app.middleware.error_handlers import register_error_handlers
