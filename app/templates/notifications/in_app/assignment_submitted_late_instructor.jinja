@@ -1,0 +1,17 @@
+{% set subject = "⚠️ Late Submission — {{assignment_name}} by {{student_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+A late assignment submission has been received.
+
+DETAILS
+-------
+Student     : {{student_name}}
+Course      : {{course_name}}
+Assignment  : {{assignment_name}}
+Due Date    : {{due_date}}
+Submitted   : {{submitted_at}}
+Delay       : {{delay}}
+
+ACTION: Review submission → {{submission_url}}
+{% endblock %}
