@@ -63,6 +63,15 @@ class User(db.Model):
     last_login = db.Column(db.DateTime, nullable=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
 
+    access_tokens = db.relationship(
+        "AccessToken", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
+    refresh_tokens = db.relationship(
+        "RefreshToken", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
+    user_roles = db.relationship(
+        "UserRole", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
     account_status = db.relationship(
         "UserAccountStatus", backref="user", uselist=False, cascade="all, delete-orphan"
     )
