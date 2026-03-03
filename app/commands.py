@@ -481,166 +481,12 @@ def seed_cli():
 # ---------------------------------------------------------------------------
 # Helper used by the seed command
 # ---------------------------------------------------------------------------
-
-def _seed_channel(templates_fn, channel: str, build_html_fn=None, force: bool = False):
-    """
-    Generic helper that inserts/updates notification_template rows for one channel.
-
-    Args:
-        templates_fn : callable that returns the list of template dicts (from a migration file)
-        channel      : 'email', 'in_app', or 'whatsapp'
-        build_html_fn: optional callable(tpl) -> html_string  (only needed for email)
-        force        : when True, overwrite existing version-1 rows
-
-    Returns:
-        tuple(created, updated, skipped)
-    """
-    from app.models.notifications.notification_template import NotificationTemplate
-
-    created = skipped = updated = 0
-    now = datetime.utcnow()
-
-    for tpl in templates_fn():
-        n_type = tpl["notification_type"]
-
-        existing = NotificationTemplate.query.filter_by(
-            notification_type=n_type,
-            channel=channel,
-            version=1,
-        ).first()
-
-        html_content  = build_html_fn(tpl) if build_html_fn else None
-        text_content  = tpl.get("template_text")
-        subject       = tpl.get("subject")
-        variables     = tpl.get("variables", [])
-
-        if existing and not force:
-            click.echo(f"  ⏭  Skip (exists): {n_type}/{channel}")
-            skipped += 1
-            continue
-
-        if existing:
-            existing.subject       = subject
-            existing.template_html = html_content
-            existing.template_text = text_content
-            existing.variables     = variables
-            existing.is_active     = True
-            existing.updated_at    = now
-            db.session.add(existing)
-            click.echo(f"  ♻  Updated : {n_type}/{channel}")
-            updated += 1
-        else:
-            db.session.add(NotificationTemplate(
-                notification_type=n_type,
-                channel=channel,
-                subject=subject,
-                template_html=html_content,
-                template_text=text_content,
-                variables=variables,
-                version=1,
-                is_active=True,
-                created_at=now,
-                updated_at=now,
-            ))
-            click.echo(f"  ✓  Created : {n_type}/{channel}")
-            created += 1
-
-    return created, updated, skipped
-
+# (Notification templates seeding removed as we now use file-based templates)
 
 # ---------------------------------------------------------------------------
 # Main seed command
 # ---------------------------------------------------------------------------
-
-@seed_cli.command("templates")
-@click.option(
-    "--channel",
-    type=click.Choice(["email", "in_app", "whatsapp", "all"], case_sensitive=False),
-    default="all",
-    show_default=True,
-    help="Which channel(s) to seed.",
-)
-@click.option(
-    "--force",
-    is_flag=True,
-    help="Overwrite existing version-1 templates.",
-)
-def seed_notification_templates(channel, force):
-    """
-    Seed notification templates into the database from the migration definition files.
-
-    The template content is imported directly from:
-      - migrations/versions/nt001_email_notification_templates.py   (email)
-      - migrations/versions/nt002_inapp_notification_templates.py   (in_app)
-      - migrations/versions/nt003_whatsapp_notification_templates.py (whatsapp)
-
-    Usage examples:
-      flask seed templates               # seed all channels
-      flask seed templates --channel email
-      flask seed templates --force       # overwrite existing
-    """
-    import importlib.util, sys, os
-
-    def _load(filename):
-        """Dynamically load a migration module by file path."""
-        migrations_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "migrations", "versions",
-        )
-        path = os.path.join(migrations_dir, filename)
-        spec = importlib.util.spec_from_file_location(filename[:-3], path)
-        mod  = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        return mod
-
-    total_created = total_updated = total_skipped = 0
-
-    try:
-        channels_to_seed = (
-            ["email", "in_app", "whatsapp"] if channel == "all" else [channel]
-        )
-
-        if "email" in channels_to_seed:
-            click.echo(click.style("\n── Email templates ──────────────────────────────", bold=True))
-            m = _load("nt001_email_notification_templates.py")
-            # build_html_fn wraps the migration's own _build_html helper
-            def _email_html(tpl, _m=m):
-                return _m._build_html(
-                    color=tpl["color"],
-                    icon=tpl["icon"],
-                    category=tpl["category"],
-                    title=tpl["title"],
-                    body_html=tpl["body"],
-                    cta_html=tpl.get("cta", ""),
-                )
-            c, u, s = _seed_channel(m._templates, "email", build_html_fn=_email_html, force=force)
-            total_created += c; total_updated += u; total_skipped += s
-
-        if "in_app" in channels_to_seed:
-            click.echo(click.style("\n── In-App templates ─────────────────────────────", bold=True))
-            m = _load("nt002_inapp_notification_templates.py")
-            c, u, s = _seed_channel(m._templates, "in_app", force=force)
-            total_created += c; total_updated += u; total_skipped += s
-
-        if "whatsapp" in channels_to_seed:
-            click.echo(click.style("\n── WhatsApp templates ───────────────────────────", bold=True))
-            m = _load("nt003_whatsapp_notification_templates.py")
-            c, u, s = _seed_channel(m._templates, "whatsapp", force=force)
-            total_created += c; total_updated += u; total_skipped += s
-
-        db.session.commit()
-        click.echo(
-            click.style(
-                f"\n✅ Done — created: {total_created}, "
-                f"updated: {total_updated}, skipped: {total_skipped}",
-                fg="green", bold=True,
-            )
-        )
-
-    except Exception as exc:
-        db.session.rollback()
-        click.echo(click.style(f"\n❌ Seeding failed: {exc}", fg="red"))
-        logger.error("Template seeding failed: %s", exc, exc_info=True)
+# (seed templates command removed)
 
 
 # ===================== Auto-Seed on Startup =====================
@@ -679,7 +525,7 @@ def auto_seed(app):
             from sqlalchemy import inspect as sa_inspect
             inspector = sa_inspect(db.engine)
             existing_tables = inspector.get_table_names()
-            required_tables = {"roles", "users", "notification_templates"}
+            required_tables = {"roles", "users"}
             missing = required_tables - set(existing_tables)
             if missing:
                 app.logger.warning(
@@ -754,83 +600,6 @@ def auto_seed(app):
                     )
             else:
                 app.logger.debug("[auto-seed] users table already populated — skipping")
-
-            # ── 3. Notification templates ─────────────────────────────────
-            from app.models.notifications.notification_template import NotificationTemplate
-
-            if NotificationTemplate.query.count() == 0:
-                app.logger.info(
-                    "[auto-seed] notification_templates table is empty — seeding templates..."
-                )
-                now = datetime.utcnow()
-                total = 0
-
-                # Email
-                m = _load("nt001_email_notification_templates.py")
-                for tpl in m._templates():
-                    db.session.add(NotificationTemplate(
-                        notification_type=tpl["notification_type"],
-                        channel="email",
-                        subject=tpl.get("subject"),
-                        template_html=m._build_html(
-                            color=tpl["color"],
-                            icon=tpl["icon"],
-                            category=tpl["category"],
-                            title=tpl["title"],
-                            body_html=tpl["body"],
-                            cta_html=tpl.get("cta", ""),
-                        ),
-                        template_text=None,
-                        variables=tpl.get("variables", []),
-                        version=1,
-                        is_active=True,
-                        created_at=now,
-                        updated_at=now,
-                    ))
-                    total += 1
-
-                # In-App
-                m = _load("nt002_inapp_notification_templates.py")
-                for tpl in m._templates():
-                    db.session.add(NotificationTemplate(
-                        notification_type=tpl["notification_type"],
-                        channel="in_app",
-                        subject=tpl.get("subject"),
-                        template_html=None,
-                        template_text=tpl.get("template_text"),
-                        variables=tpl.get("variables", []),
-                        version=1,
-                        is_active=True,
-                        created_at=now,
-                        updated_at=now,
-                    ))
-                    total += 1
-
-                # WhatsApp
-                m = _load("nt003_whatsapp_notification_templates.py")
-                for tpl in m._templates():
-                    db.session.add(NotificationTemplate(
-                        notification_type=tpl["notification_type"],
-                        channel="whatsapp",
-                        subject=tpl.get("subject"),
-                        template_html=None,
-                        template_text=tpl.get("template_text"),
-                        variables=tpl.get("variables", []),
-                        version=1,
-                        is_active=True,
-                        created_at=now,
-                        updated_at=now,
-                    ))
-                    total += 1
-
-                db.session.commit()
-                app.logger.info(
-                    "[auto-seed] ✓ Notification templates seeded (%d rows)", total
-                )
-            else:
-                app.logger.debug(
-                    "[auto-seed] notification_templates already populated — skipping"
-                )
 
         except Exception as exc:
             db.session.rollback()
