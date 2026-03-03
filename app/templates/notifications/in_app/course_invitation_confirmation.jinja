@@ -1,0 +1,15 @@
+{% set subject = "You've Been Invited to {{course_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{inviter_name}} has invited you to join {{course_name}}.
+
+DETAILS
+-------
+Course      : {{course_name}}
+Invited By  : {{inviter_name}}
+
+Accept the invitation to start learning.
+
+ACTION: Accept invitation → {{registration_url}}
+{% endblock %}
