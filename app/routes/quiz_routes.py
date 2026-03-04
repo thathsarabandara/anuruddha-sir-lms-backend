@@ -1,0 +1,648 @@
+"""
+Quiz Routes
+All quiz-related API endpoints organized by resource type.
+
+Endpoint map:
+  Quiz Management (CRUD)
+    POST   /api/v1/courses/<course_id>/quizzes               - Create quiz
+    GET    /api/v1/courses/<course_id>/quizzes               - List quizzes for course
+    GET    /api/v1/quizzes/<quiz_id>                         - Get quiz details
+    PUT    /api/v1/quizzes/<quiz_id>                         - Update quiz
+    DELETE /api/v1/quizzes/<quiz_id>                         - Delete quiz
+
+  Question Management
+    POST   /api/v1/quizzes/<quiz_id>/questions               - Create question
+    GET    /api/v1/quizzes/<quiz_id>/questions               - Get quiz questions
+    PUT    /api/v1/questions/<question_id>                   - Update question
+    DELETE /api/v1/questions/<question_id>                   - Delete question
+
+  Quiz Attempt Endpoints
+    POST   /api/v1/quizzes/<quiz_id>/attempts               - Start quiz attempt
+    POST   /api/v1/attempts/<attempt_id>/answers            - Save/update answer
+    POST   /api/v1/attempts/<attempt_id>/submit             - Submit quiz
+    GET    /api/v1/quizzes/<quiz_id>/results                - Get quiz results (student)
+
+  Grading Endpoints
+    POST   /api/v1/answers/<answer_id>/grade                - Grade essay answer
+    GET    /api/v1/quizzes/<quiz_id>/submissions/<user_id>  - Get submission for grading
+
+  Analytics Endpoints
+    GET    /api/v1/quizzes/<quiz_id>/statistics             - Quiz statistics (instructor)
+    GET    /api/v1/questions/<question_id>/analytics        - Question analytics
+"""
+
+from flask import Blueprint, request
+
+from app.exceptions import (
+    AuthorizationError,
+    ConflictError,
+    ResourceNotFoundError,
+    ValidationError,
+)
+from app.middleware.auth_middleware import require_auth, require_role
+from app.services.quizzes import (
+    QuizAnalyticsService,
+    QuizAnswerService,
+    QuizAttemptService,
+    QuizGradingService,
+    QuizService,
+)
+from app.services.quizzes import QuestionService
+from app.utils.decorators import handle_exceptions
+from app.utils.response import error_response, success_response
+
+bp = Blueprint("quizzes", __name__, url_prefix="/api/v1")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Helper
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _handle_lms_error(e: Exception):
+    """Convert LMS exceptions to HTTP responses."""
+    from app.exceptions import LMSException
+
+    if isinstance(e, LMSException):
+        return error_response(e.message, e.status_code)
+    return error_response(str(e), 500)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Quiz Management Endpoints (endpoints 1-4)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/courses/<course_id>/quizzes", methods=["POST"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin")
+def create_quiz(course_id):
+    """
+    Create a new quiz for a course.
+    Requires: Teacher or Admin role. Requesting user must be the course instructor.
+
+    URL Params:
+        course_id (str): UUID of the target course
+
+    Request Body:
+        title (required), description, passing_score, duration_minutes,
+        max_attempts, show_answers_after, shuffle_questions, shuffle_answers,
+        available_from, available_until
+
+    Returns:
+        201: Created quiz data (quiz_id, course_id, title, created_at)
+    """
+    try:
+        data = request.get_json() or {}
+
+        if not data.get("title"):
+            return error_response("title is required", 400)
+
+        quiz = QuizService.create_quiz(
+            course_id=course_id,
+            instructor_id=request.user_id,
+            title=data["title"],
+            description=data.get("description"),
+            passing_score=data.get("passing_score", 70),
+            duration_minutes=data.get("duration_minutes"),
+            max_attempts=data.get("max_attempts", 1),
+            show_answers_after=data.get("show_answers_after", "submission"),
+            shuffle_questions=data.get("shuffle_questions", False),
+            shuffle_answers=data.get("shuffle_answers", False),
+            available_from=data.get("available_from"),
+            available_until=data.get("available_until"),
+        )
+        return success_response(data=quiz, message="Quiz created successfully", status_code=201)
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/courses/<course_id>/quizzes", methods=["GET"])
+@handle_exceptions
+@require_auth
+def list_quizzes(course_id):
+    """
+    List all quizzes for a course.
+    Requires: Authenticated user.
+
+    URL Params:
+        course_id (str): UUID of the course
+
+    Returns:
+        200: List of quiz data
+    """
+    try:
+        quizzes = QuizService.get_quizzes_for_course(course_id)
+        return success_response(data=quizzes, message="Quizzes retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/quizzes/<quiz_id>", methods=["GET"])
+@handle_exceptions
+@require_auth
+def get_quiz(quiz_id):
+    """
+    Get detailed information for a specific quiz.
+    Requires: Authenticated user (enrolled students or instructor).
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Returns:
+        200: Quiz data with total_questions, total_points, and settings
+        404: Quiz not found
+    """
+    try:
+        quiz = QuizService.get_quiz(quiz_id)
+        return success_response(data=quiz, message="Quiz retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/quizzes/<quiz_id>", methods=["PUT"])
+@handle_exceptions
+@require_auth
+def update_quiz(quiz_id):
+    """
+    Update quiz fields. Only the course instructor or admin may update.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Request Body:
+        Any updatable quiz fields (title, description, passing_score, etc.)
+
+    Returns:
+        200: Updated quiz data
+        403: Not authorized
+        404: Quiz not found
+    """
+    try:
+        data = request.get_json() or {}
+        quiz = QuizService.update_quiz(
+            quiz_id=quiz_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+            **data,
+        )
+        return success_response(data=quiz, message="Quiz updated successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/quizzes/<quiz_id>", methods=["DELETE"])
+@handle_exceptions
+@require_auth
+def delete_quiz(quiz_id):
+    """
+    Delete a quiz (cascades to questions, attempts, answers).
+    Only the course instructor or admin may delete.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Returns:
+        200: Deletion confirmation
+        403: Not authorized
+        404: Quiz not found
+    """
+    try:
+        QuizService.delete_quiz(
+            quiz_id=quiz_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+        )
+        return success_response(message="Quiz deleted successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Question Management Endpoints (endpoints 5-8)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/quizzes/<quiz_id>/questions", methods=["POST"])
+@handle_exceptions
+@require_auth
+def create_question(quiz_id):
+    """
+    Create a new question (with options) for a quiz.
+    Only the course instructor or admin may create questions.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Request Body:
+        question_type (required): multiple_choice | multiple_answer | short_answer |
+                                   essay | matching | fill_blank
+        question_text (required): Question content
+        points: Points for correct answer (default 1)
+        difficulty: easy | medium | hard
+        category: Optional category label
+        explanation: Optional explanation shown after submission
+        question_order: Optional display ordering
+        options: List of {option_text, is_correct, option_order} — required for
+                 multiple_choice, multiple_answer, matching
+
+    Returns:
+        201: Created question data with options
+        400: Validation error
+        403: Not authorized
+        404: Quiz not found
+    """
+    try:
+        data = request.get_json() or {}
+
+        if not data.get("question_type"):
+            return error_response("question_type is required", 400)
+        if not data.get("question_text"):
+            return error_response("question_text is required", 400)
+
+        question = QuestionService.create_question(
+            quiz_id=quiz_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+            question_type=data["question_type"],
+            question_text=data["question_text"],
+            points=data.get("points", 1),
+            difficulty=data.get("difficulty", "medium"),
+            category=data.get("category"),
+            explanation=data.get("explanation"),
+            question_order=data.get("question_order"),
+            options=data.get("options"),
+        )
+        return success_response(data=question, message="Question created successfully", status_code=201)
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/quizzes/<quiz_id>/questions", methods=["GET"])
+@handle_exceptions
+@require_auth
+def get_quiz_questions(quiz_id):
+    """
+    Retrieve all questions for a quiz.
+    Instructors/admins receive is_correct on options.
+    Students receive questions without correct-answer indicators.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Query Params:
+        include_answers (bool): Include is_correct flag (instructor/admin only)
+
+    Returns:
+        200: List of question objects with options
+    """
+    try:
+        # Only instructors/admins may see correct answers
+        include_answers = False
+        if request.user_role in ("teacher", "admin"):
+            include_answers = request.args.get("include_answers", "false").lower() == "true"
+
+        questions = QuestionService.get_quiz_questions(quiz_id, include_answers=include_answers)
+        return success_response(data=questions, message="Questions retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/questions/<question_id>", methods=["PUT"])
+@handle_exceptions
+@require_auth
+def update_question(question_id):
+    """
+    Update a question and optionally replace its options.
+    Only the course instructor or admin may update.
+
+    URL Params:
+        question_id (str): Question UUID
+
+    Request Body:
+        Any updatable question fields; include 'options' list to replace options.
+
+    Returns:
+        200: Updated question data
+        403: Not authorized
+        404: Question not found
+    """
+    try:
+        data = request.get_json() or {}
+        question = QuestionService.update_question(
+            question_id=question_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+            **data,
+        )
+        return success_response(data=question, message="Question updated successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/questions/<question_id>", methods=["DELETE"])
+@handle_exceptions
+@require_auth
+def delete_question(question_id):
+    """
+    Delete a question (cascades to its options and attempt answers).
+    Only the course instructor or admin may delete.
+
+    URL Params:
+        question_id (str): Question UUID
+
+    Returns:
+        200: Deletion confirmation
+        403: Not authorized
+        404: Question not found
+    """
+    try:
+        QuestionService.delete_question(
+            question_id=question_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+        )
+        return success_response(message="Question deleted successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Quiz Attempt Endpoints (endpoints 9-12)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/quizzes/<quiz_id>/attempts", methods=["POST"])
+@handle_exceptions
+@require_auth
+def start_quiz_attempt(quiz_id):
+    """
+    Start a new quiz attempt for the authenticated student.
+    Validates enrollment, availability window, and attempt limits.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Returns:
+        201: Attempt data with shuffled question list and optional expires_at
+        403: Not enrolled in course
+        409: Max attempts reached or attempt already in progress
+        422: Quiz not yet available or expired
+    """
+    try:
+        ip_address = request.remote_addr
+        attempt = QuizAttemptService.start_attempt(
+            quiz_id=quiz_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+            ip_address=ip_address,
+        )
+        return success_response(data=attempt, message="Quiz attempt started", status_code=201)
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/attempts/<attempt_id>/answers", methods=["POST"])
+@handle_exceptions
+@require_auth
+def save_answer(attempt_id):
+    """
+    Save (or update) a student's answer for a single question.
+    Can be called multiple times per question to auto-save progress.
+
+    URL Params:
+        attempt_id (str): QuizAttempt UUID
+
+    Request Body:
+        question_id (required): Question UUID
+        answer (required): option_id (MCQ) or text (short/essay/fill)
+        time_taken_seconds: Optional seconds spent on the question
+
+    Returns:
+        200: Save confirmation with timestamp
+        403: Attempt not owned by user
+        409: Quiz already submitted or time expired
+    """
+    try:
+        data = request.get_json() or {}
+
+        if not data.get("question_id"):
+            return error_response("question_id is required", 400)
+        if data.get("answer") is None:
+            return error_response("answer is required", 400)
+
+        result = QuizAnswerService.save_answer(
+            attempt_id=attempt_id,
+            user_id=request.user_id,
+            question_id=data["question_id"],
+            answer=data["answer"],
+            time_taken_seconds=data.get("time_taken_seconds"),
+        )
+        return success_response(data=result, message="Answer saved")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/attempts/<attempt_id>/submit", methods=["POST"])
+@handle_exceptions
+@require_auth
+def submit_quiz(attempt_id):
+    """
+    Finalize a quiz attempt.
+    Auto-grades objective questions; essay/short-answer questions are flagged
+    for manual grading.
+
+    URL Params:
+        attempt_id (str): QuizAttempt UUID
+
+    Returns:
+        200: Full result with score, percentage, passed flag, and per-question breakdown
+        403: Attempt not owned by user
+        409: Already submitted
+    """
+    try:
+        result = QuizAnswerService.submit_quiz(
+            attempt_id=attempt_id,
+            user_id=request.user_id,
+        )
+        return success_response(data=result, message="Quiz submitted successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/quizzes/<quiz_id>/results", methods=["GET"])
+@handle_exceptions
+@require_auth
+def get_quiz_results(quiz_id):
+    """
+    Get all submitted/graded attempts for the authenticated student on this quiz.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Returns:
+        200: List of attempt summaries (score, percentage, passed, submitted_at, time_taken)
+    """
+    try:
+        attempts = QuizAttemptService.get_student_attempts(
+            quiz_id=quiz_id,
+            user_id=request.user_id,
+        )
+        return success_response(data={"attempts": attempts}, message="Quiz results retrieved")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Grading Endpoints (endpoints 13-14)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/answers/<answer_id>/grade", methods=["POST"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin")
+def grade_answer(answer_id):
+    """
+    Manually grade an essay or short-answer question.
+    Only the course instructor or admin may grade.
+    After grading, the attempt score is recalculated automatically.
+
+    URL Params:
+        answer_id (str): AttemptAnswer UUID
+
+    Request Body:
+        points_awarded (required): Points to award (int, 0 to question.points)
+        feedback: Optional grading comment
+
+    Returns:
+        200: Grade record data
+        400: Validation error (points out of range)
+        403: Not authorized
+        404: Answer not found
+    """
+    try:
+        data = request.get_json() or {}
+
+        if data.get("points_awarded") is None:
+            return error_response("points_awarded is required", 400)
+
+        grade = QuizGradingService.grade_answer(
+            answer_id=answer_id,
+            grader_id=request.user_id,
+            grader_role=request.user_role,
+            points_awarded=data["points_awarded"],
+            feedback=data.get("feedback"),
+        )
+        return success_response(data=grade, message="Answer graded successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/quizzes/<quiz_id>/submissions/<user_id>", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin")
+def get_submission_for_grading(quiz_id, user_id):
+    """
+    Retrieve a student's latest submission for instructor review and grading.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+        user_id (str): Student's user UUID
+
+    Returns:
+        200: Full submission with all answers, grading status, and feedback
+        403: Not authorized
+        404: Quiz or submission not found
+    """
+    try:
+        submission = QuizGradingService.get_submission_for_grading(
+            quiz_id=quiz_id,
+            student_id=user_id,
+            grader_id=request.user_id,
+            grader_role=request.user_role,
+        )
+        return success_response(data=submission, message="Submission retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Analytics Endpoints (endpoints 15-16)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/quizzes/<quiz_id>/statistics", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin")
+def get_quiz_statistics(quiz_id):
+    """
+    Get overall quiz performance statistics.
+    Only the course instructor or admin may access.
+
+    URL Params:
+        quiz_id (str): Quiz UUID
+
+    Returns:
+        200: Statistics including total_attempts, average_score, pass_rate,
+             average_time_minutes, and per-question breakdown
+        403: Not authorized
+        404: Quiz not found
+    """
+    try:
+        stats = QuizAnalyticsService.get_quiz_statistics(
+            quiz_id=quiz_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+        )
+        return success_response(data=stats, message="Quiz statistics retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/questions/<question_id>/analytics", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin")
+def get_question_analytics(question_id):
+    """
+    Get detailed analytics for a single question.
+    Only the course instructor or admin may access.
+
+    URL Params:
+        question_id (str): Question UUID
+
+    Returns:
+        200: Analytics including correct_percentage, average_time_seconds,
+             difficulty_rating, and discrimination_index
+        403: Not authorized
+        404: Question not found
+    """
+    try:
+        analytics = QuizAnalyticsService.get_question_analytics(
+            question_id=question_id,
+            user_id=request.user_id,
+            user_role=request.user_role,
+        )
+        return success_response(data=analytics, message="Question analytics retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
