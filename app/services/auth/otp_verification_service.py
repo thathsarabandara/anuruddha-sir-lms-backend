@@ -6,10 +6,11 @@ Handles OTP verification for registration, password reset, and login
 import logging
 from datetime import datetime
 
-from app import db
+from app import config, db
 from app.exceptions import ValidationError
 from app.models.auth import OTPRequest, User
 from app.services.base_service import BaseService
+from app.services.notifications.notification_service import NotificationService
 from app.utils.auth import OTPManager, PasswordManager, SessionManager, TokenManager
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,6 @@ class OTPVerificationService(BaseService):
         Verify OTP code for account activation
 
         Args:
-            email: User email
             otp_code: OTP code to verify
             verification_token: Verification token
 
@@ -91,6 +91,23 @@ class OTPVerificationService(BaseService):
             # Delete OTP from Redis
             SessionManager.delete_otp(verification_token)
 
+            # Send registration pending admin review notification
+            try:
+                NotificationService().send_registration_pending_admin_review(
+                    user.id, 
+                    currrent_year=datetime.utcnow().year, 
+                    platform_url=config.get("FRONTEND_URL"), 
+                    preferences_url=config.get("PREFERENCES_URL")+"/nofication/prefences", 
+                    recipient_name=user.first_name or user.username, 
+                    recipient_name=user.username, 
+                    messagType="NOTIFICATION", 
+                    priority="NORMAL", 
+                    channels=['email', 'whatsapp']
+                    )
+                
+            except Exception as exc:
+                logger.error(f"Failed to send registration pending notification: {str(exc)}")
+
             logger.info(f"OTP verified for user {user.email} — awaiting admin approval")
 
             return {
@@ -110,53 +127,3 @@ class OTPVerificationService(BaseService):
             db.session.rollback()
             logger.error(f"OTP verification failed: {str(e)}")
             raise ValidationError(f"OTP verification failed: {str(e)}")
-
-    @staticmethod
-    def verify_otp_for_password_reset(email, otp_code, reset_token):
-        """
-        Verify OTP for password reset
-
-        Args:
-            email: User email
-            otp_code: OTP code to verify
-            reset_token: Password reset token
-
-        Returns:
-            dict: Verification status
-
-        Raises:
-            ValidationError: If verification fails
-        """
-        try:
-            # Validate OTP format
-            OTPManager.validate_otp_code(otp_code)
-
-            # Get OTP request
-            otp_request = OTPRequest.query.filter_by(
-                verification_token=reset_token, email=email, purpose="password_reset"
-            ).first()
-
-            if not otp_request:
-                raise ValidationError("Invalid or expired reset token")
-
-            # Check if expired
-            if OTPManager.check_otp_expiry(otp_request.expires_at):
-                raise ValidationError("Reset token has expired")
-
-            # Verify OTP code
-            if not PasswordManager.verify_password(otp_code, otp_request.otp_code_hash):
-                raise ValidationError("Invalid OTP code")
-
-            # Mark as verified
-            otp_request.is_verified = True
-            db.session.commit()
-
-            logger.info(f"Password reset OTP verified for {email}")
-
-            return {"verified": True, "reset_token": reset_token}
-
-        except ValidationError:
-            raise
-        except Exception as e:
-            logger.error(f"Password reset OTP verification failed: {str(e)}")
-            raise ValidationError(f"Verification failed: {str(e)}")
