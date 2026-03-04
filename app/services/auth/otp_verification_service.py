@@ -6,6 +6,7 @@ Handles OTP verification for registration, password reset, and login
 import logging
 from datetime import datetime
 
+from flask import current_app
 from app import config, db
 from app.exceptions import ValidationError
 from app.models.auth import OTPRequest, User
@@ -78,13 +79,6 @@ class OTPVerificationService(BaseService):
                 raise ValidationError("User not found")
 
             user.email_verified = True
-            # user.is_active remains False
-
-            # Advance approval_status from 'pending_verification' → 'pending_approval'
-            from app.models.auth.user_account_status import UserAccountStatus
-            status_record = UserAccountStatus.query.filter_by(user_id=user.user_id).first()
-            if status_record and status_record.approval_status == "pending_verification":
-                status_record.approval_status = "pending_approval"
 
             db.session.commit()
 
@@ -93,19 +87,21 @@ class OTPVerificationService(BaseService):
 
             # Send registration pending admin review notification
             try:
-                NotificationService().send_registration_pending_admin_review(
-                    user.id, 
-                    currrent_year=datetime.utcnow().year, 
-                    platform_url=config.get("FRONTEND_URL"), 
-                    preferences_url=config.get("PREFERENCES_URL")+"/nofication/prefences", 
-                    recipient_name=user.first_name or user.username,
-                    messagType="NOTIFICATION", 
+                logger.info(f"Attempting to send registration pending admin review notification for user {user.user_id}")
+                result = NotificationService().send_registration_pending_admin_review(
+                    user_id=user.user_id, 
+                    current_year=datetime.utcnow().year, 
+                    platform_url=current_app.config.get("FRONTEND_URL", "http://localhost:5173"),
+                    preferences_url=current_app.config.get("PREFERENCES_URL", "http://localhost:5173") + "/notification/preferences",
+                    recipient_name=f"{user.first_name} {user.last_name}".strip() or user.username,
+                    message_type="NOTIFICATION", 
                     priority="NORMAL", 
                     channels=['email', 'whatsapp']
-                    )
+                )
+                logger.info(f"Registration pending admin review notification result: {result} for user {user.user_id}")
                 
             except Exception as exc:
-                logger.error(f"Failed to send registration pending notification: {str(exc)}")
+                logger.error(f"Failed to send registration pending notification: {str(exc)}", exc_info=True)
 
             logger.info(f"OTP verified for user {user.email} — awaiting admin approval")
 
