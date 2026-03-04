@@ -1,0 +1,31 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 👋
+
+Welcome to Anuruddha Sir LMS!
+
+Please use this code to complete your registration:
+
+🔢 *{{otp_code}}*
+
+⏳ Valid for *{{expiry_minutes}} minutes* only.
+
+⚠️ Do NOT share this code with anyone.
+If you didn't request this, ignore this message.
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය {{recipient_name}} ට! 👋
+
+අනුරුද්ධ සර් LMS වෙත සාදරයෙන් පිළිගනිමු!
+
+ඔබගේ ලියාපදිංචිය සම්පූර්ණ කිරීමට කරුණාකර මෙම කේතය භාවිතා කරන්න.:
+
+🔢 *{{otp_code}}*
+
+⏳ වලංගු වන්නේ *මිනිත්තු {{expiry_minutes}}* ක් සඳහා පමණි.
+
+⚠️ මෙම කේතය කිසිවෙකු සමඟ බෙදා නොගන්න.
+ඔබ මෙය ඉල්ලා නොසිටියේ නම්, මෙම පණිවිඩය නොසලකා හරින්න.
+{% endblock %}
