@@ -201,8 +201,13 @@ class NotificationService:
                 try:
                     # Load template: notifications/whatsapp/{template_name}.txt
                     template_path = f"notifications/whatsapp/{template_name}.txt"
+                    template = None
                     try:
                         template = self.env.get_template(template_path)
+                    except Exception as template_error:
+                        logger.warning(f"WhatsApp template not found for {template_name}: {template_path}. Skipping WhatsApp.")
+                    
+                    if template:
                         content = template.render(**variables)
                         
                         # Get messageType and priority from variables if provided, otherwise auto-determine
@@ -230,17 +235,19 @@ class NotificationService:
                             elif "urgent" in template_name.lower():
                                 priority = "HIGH"
                         
-                        self.whatsapp_channel.send(
+                        send_result = self.whatsapp_channel.send(
                             phone=user.phone,
                             content=content,
                             messageType=message_type,
                             priority=priority
                         )
-                    except Exception:
-                        # Template might not exist for this channel, skip silently
-                        pass
+                        
+                        if send_result.get("status") == "sent":
+                            logger.info(f"WhatsApp notification {template_name} sent to {user.phone}")
+                        else:
+                            logger.warning(f"WhatsApp notification {template_name} failed to send to {user.phone}: {send_result.get('error', 'Unknown error')}")
                 except Exception as e:
-                    logger.error(f"Error sending whatsapp {template_name} to {user.phone}: {e}")
+                    logger.error(f"Error sending whatsapp {template_name} to {user.phone}: {e}", exc_info=True)
 
             # ------------------------------------------------------------------
             # 3. In-App Channel
@@ -311,7 +318,7 @@ class NotificationService:
         }
         return self._send_notification('registration_otp', user_id, variables, message_type=message_type, priority=priority, channels=channels)
     
-    def send_enrollment_confirmation(self, user_id, course_name, course_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, start_date, unsubscribe_url):
+    def send_enrollment_confirmation(self, user_id, course_name, course_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, start_date, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send enrollment_confirmation notification.
         Variables: course_name, course_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, start_date, unsubscribe_url
@@ -327,10 +334,10 @@ class NotificationService:
             'start_date': start_date,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('enrollment_confirmation', user_id, variables)
+        return self._send_notification('enrollment_confirmation', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_enrollment_expiration_warning(self, user_id, course_name, course_url, current_year, days_remaining, expiry_date, platform_url, preferences_url, recipient_name, renew_url, unsubscribe_url):
+    def send_enrollment_expiration_warning(self, user_id, course_name, course_url, current_year, days_remaining, expiry_date, platform_url, preferences_url, recipient_name, renew_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send enrollment_expiration_warning notification.
         Variables: course_name, course_url, current_year, days_remaining, expiry_date, platform_url, preferences_url, recipient_name, renew_url, unsubscribe_url
@@ -347,10 +354,10 @@ class NotificationService:
             'renew_url': renew_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('enrollment_expiration_warning', user_id, variables)
+        return self._send_notification('enrollment_expiration_warning', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_course_invitation_confirmation(self, user_id, course_name, course_url, current_year, inviter_name, platform_url, preferences_url, recipient_name, registration_url, unsubscribe_url):
+    def send_course_invitation_confirmation(self, user_id, course_name, course_url, current_year, inviter_name, platform_url, preferences_url, recipient_name, registration_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send course_invitation_confirmation notification.
         Variables: course_name, course_url, current_year, inviter_name, platform_url, preferences_url, recipient_name, registration_url, unsubscribe_url
@@ -366,10 +373,10 @@ class NotificationService:
             'registration_url': registration_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('course_invitation_confirmation', user_id, variables)
+        return self._send_notification('course_invitation_confirmation', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_enrollment_request_admin(self, user_id, course_name, current_year, platform_url, preferences_url, recipient_name, request_date, review_url, student_email, student_name, unsubscribe_url):
+    def send_enrollment_request_admin(self, user_id, course_name, current_year, platform_url, preferences_url, recipient_name, request_date, review_url, student_email, student_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send enrollment_request_admin notification.
         Variables: course_name, current_year, platform_url, preferences_url, recipient_name, request_date, review_url, student_email, student_name, unsubscribe_url
@@ -386,10 +393,10 @@ class NotificationService:
             'student_name': student_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('enrollment_request_admin', user_id, variables)
+        return self._send_notification('enrollment_request_admin', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_enrollment_request_approved_rejected(self, user_id, course_name, course_url, current_year, platform_url, preferences_url, reason, recipient_name, status, unsubscribe_url):
+    def send_enrollment_request_approved_rejected(self, user_id, course_name, course_url, current_year, platform_url, preferences_url, reason, recipient_name, status, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send enrollment_request_approved_rejected notification.
         Variables: course_name, course_url, current_year, platform_url, preferences_url, reason, recipient_name, status, unsubscribe_url
@@ -405,10 +412,10 @@ class NotificationService:
             'status': status,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('enrollment_request_approved_rejected', user_id, variables)
+        return self._send_notification('enrollment_request_approved_rejected', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_welcome_new_enrollment(self, user_id, course_name, course_url, current_year, first_lesson_url, instructor_name, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_welcome_new_enrollment(self, user_id, course_name, course_url, current_year, first_lesson_url, instructor_name, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send welcome_new_enrollment notification.
         Variables: course_name, course_url, current_year, first_lesson_url, instructor_name, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -424,10 +431,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('welcome_new_enrollment', user_id, variables)
+        return self._send_notification('welcome_new_enrollment', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_assignment_submitted_instructor(self, user_id, assignment_name, course_name, current_year, platform_url, preferences_url, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url):
+    def send_assignment_submitted_instructor(self, user_id, assignment_name, course_name, current_year, platform_url, preferences_url, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send assignment_submitted_instructor notification.
         Variables: assignment_name, course_name, current_year, platform_url, preferences_url, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url
@@ -444,10 +451,10 @@ class NotificationService:
             'submitted_at': submitted_at,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('assignment_submitted_instructor', user_id, variables)
+        return self._send_notification('assignment_submitted_instructor', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_assignment_graded_student(self, user_id, assignment_name, course_name, current_year, feedback, grade, max_grade, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url):
+    def send_assignment_graded_student(self, user_id, assignment_name, course_name, current_year, feedback, grade, max_grade, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send assignment_graded_student notification.
         Variables: assignment_name, course_name, current_year, feedback, grade, max_grade, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url
@@ -465,10 +472,10 @@ class NotificationService:
             'submission_url': submission_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('assignment_graded_student', user_id, variables)
+        return self._send_notification('assignment_graded_student', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_assignment_submitted_late_instructor(self, user_id, assignment_name, course_name, current_year, delay, due_date, platform_url, preferences_url, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url):
+    def send_assignment_submitted_late_instructor(self, user_id, assignment_name, course_name, current_year, delay, due_date, platform_url, preferences_url, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send assignment_submitted_late_instructor notification.
         Variables: assignment_name, course_name, current_year, delay, due_date, platform_url, preferences_url, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url
@@ -487,10 +494,10 @@ class NotificationService:
             'submitted_at': submitted_at,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('assignment_submitted_late_instructor', user_id, variables)
+        return self._send_notification('assignment_submitted_late_instructor', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_submission_comment_added(self, user_id, assignment_name, comment_preview, commenter_name, course_name, current_year, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url):
+    def send_submission_comment_added(self, user_id, assignment_name, comment_preview, commenter_name, course_name, current_year, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send submission_comment_added notification.
         Variables: assignment_name, comment_preview, commenter_name, course_name, current_year, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url
@@ -507,10 +514,10 @@ class NotificationService:
             'submission_url': submission_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('submission_comment_added', user_id, variables)
+        return self._send_notification('submission_comment_added', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_essay_question_graded(self, user_id, course_name, current_year, feedback, grade, lesson_name, lesson_url, max_grade, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_essay_question_graded(self, user_id, course_name, current_year, feedback, grade, lesson_name, lesson_url, max_grade, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send essay_question_graded notification.
         Variables: course_name, current_year, feedback, grade, lesson_name, lesson_url, max_grade, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -528,10 +535,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('essay_question_graded', user_id, variables)
+        return self._send_notification('essay_question_graded', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_upcoming_due_date_reminder(self, user_id, assignment_name, course_name, current_year, due_date, platform_url, preferences_url, recipient_name, submission_url, time_until_due, unsubscribe_url):
+    def send_upcoming_due_date_reminder(self, user_id, assignment_name, course_name, current_year, due_date, platform_url, preferences_url, recipient_name, submission_url, time_until_due, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send upcoming_due_date_reminder notification.
         Variables: assignment_name, course_name, current_year, due_date, platform_url, preferences_url, recipient_name, submission_url, time_until_due, unsubscribe_url
@@ -548,10 +555,10 @@ class NotificationService:
             'time_until_due': time_until_due,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('upcoming_due_date_reminder', user_id, variables)
+        return self._send_notification('upcoming_due_date_reminder', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_past_due_date_reminder(self, user_id, assignment_name, course_name, current_year, due_date, overdue_by, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url):
+    def send_past_due_date_reminder(self, user_id, assignment_name, course_name, current_year, due_date, overdue_by, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send past_due_date_reminder notification.
         Variables: assignment_name, course_name, current_year, due_date, overdue_by, platform_url, preferences_url, recipient_name, submission_url, unsubscribe_url
@@ -568,10 +575,10 @@ class NotificationService:
             'submission_url': submission_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('past_due_date_reminder', user_id, variables)
+        return self._send_notification('past_due_date_reminder', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_activity_start_date_reminder(self, user_id, activity_name, activity_url, course_name, current_year, platform_url, preferences_url, recipient_name, start_date, time_until_start, unsubscribe_url):
+    def send_activity_start_date_reminder(self, user_id, activity_name, activity_url, course_name, current_year, platform_url, preferences_url, recipient_name, start_date, time_until_start, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send activity_start_date_reminder notification.
         Variables: activity_name, activity_url, course_name, current_year, platform_url, preferences_url, recipient_name, start_date, time_until_start, unsubscribe_url
@@ -588,10 +595,10 @@ class NotificationService:
             'time_until_start': time_until_start,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('activity_start_date_reminder', user_id, variables)
+        return self._send_notification('activity_start_date_reminder', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_quiz_attempt_overdue_warning(self, user_id, course_name, current_year, due_date, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, unsubscribe_url):
+    def send_quiz_attempt_overdue_warning(self, user_id, course_name, current_year, due_date, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send quiz_attempt_overdue_warning notification.
         Variables: course_name, current_year, due_date, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, unsubscribe_url
@@ -607,10 +614,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('quiz_attempt_overdue_warning', user_id, variables)
+        return self._send_notification('quiz_attempt_overdue_warning', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_quiz_submission_confirmation_student(self, user_id, course_name, current_year, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, submitted_at, total_questions, unsubscribe_url):
+    def send_quiz_submission_confirmation_student(self, user_id, course_name, current_year, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, submitted_at, total_questions, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send quiz_submission_confirmation_student notification.
         Variables: course_name, current_year, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, submitted_at, total_questions, unsubscribe_url
@@ -627,10 +634,10 @@ class NotificationService:
             'total_questions': total_questions,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('quiz_submission_confirmation_student', user_id, variables)
+        return self._send_notification('quiz_submission_confirmation_student', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_quiz_submission_notification_instructor(self, user_id, course_name, current_year, platform_url, preferences_url, quiz_name, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url):
+    def send_quiz_submission_notification_instructor(self, user_id, course_name, current_year, platform_url, preferences_url, quiz_name, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send quiz_submission_notification_instructor notification.
         Variables: course_name, current_year, platform_url, preferences_url, quiz_name, recipient_name, student_name, submission_url, submitted_at, unsubscribe_url
@@ -647,10 +654,10 @@ class NotificationService:
             'submitted_at': submitted_at,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('quiz_submission_notification_instructor', user_id, variables)
+        return self._send_notification('quiz_submission_notification_instructor', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_quiz_graded_notification(self, user_id, course_name, current_year, max_score, passed, percentage, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, score, unsubscribe_url):
+    def send_quiz_graded_notification(self, user_id, course_name, current_year, max_score, passed, percentage, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, score, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send quiz_graded_notification notification.
         Variables: course_name, current_year, max_score, passed, percentage, platform_url, preferences_url, quiz_name, quiz_url, recipient_name, score, unsubscribe_url
@@ -669,10 +676,10 @@ class NotificationService:
             'score': score,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('quiz_graded_notification', user_id, variables)
+        return self._send_notification('quiz_graded_notification', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_badge_awarded(self, user_id, awarded_at, badge_description, badge_name, badges_url, course_name, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_badge_awarded(self, user_id, awarded_at, badge_description, badge_name, badges_url, course_name, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send badge_awarded notification.
         Variables: awarded_at, badge_description, badge_name, badges_url, course_name, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -689,10 +696,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('badge_awarded', user_id, variables)
+        return self._send_notification('badge_awarded', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_course_completion_certificate(self, user_id, certificate_id, certificate_url, completion_date, course_name, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_course_completion_certificate(self, user_id, certificate_id, certificate_url, completion_date, course_name, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send course_completion_certificate notification.
         Variables: certificate_id, certificate_url, completion_date, course_name, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -708,10 +715,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('course_completion_certificate', user_id, variables)
+        return self._send_notification('course_completion_certificate', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_ceus_earned(self, user_id, ceu_credits, ceus_url, course_name, current_year, platform_url, preferences_url, recipient_name, total_ceus, unsubscribe_url):
+    def send_ceus_earned(self, user_id, ceu_credits, ceus_url, course_name, current_year, platform_url, preferences_url, recipient_name, total_ceus, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send ceus_earned notification.
         Variables: ceu_credits, ceus_url, course_name, current_year, platform_url, preferences_url, recipient_name, total_ceus, unsubscribe_url
@@ -727,10 +734,10 @@ class NotificationService:
             'total_ceus': total_ceus,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('ceus_earned', user_id, variables)
+        return self._send_notification('ceus_earned', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_new_badge_created(self, user_id, badge_description, badge_name, badge_url, course_name, created_by, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_new_badge_created(self, user_id, badge_description, badge_name, badge_url, course_name, created_by, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send new_badge_created notification.
         Variables: badge_description, badge_name, badge_url, course_name, created_by, current_year, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -747,10 +754,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('new_badge_created', user_id, variables)
+        return self._send_notification('new_badge_created', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_feedback_review_submission(self, user_id, course_name, current_year, platform_url, preferences_url, rating, recipient_name, review_preview, review_url, reviewer_name, unsubscribe_url):
+    def send_feedback_review_submission(self, user_id, course_name, current_year, platform_url, preferences_url, rating, recipient_name, review_preview, review_url, reviewer_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send feedback_review_submission notification.
         Variables: course_name, current_year, platform_url, preferences_url, rating, recipient_name, review_preview, review_url, reviewer_name, unsubscribe_url
@@ -767,10 +774,10 @@ class NotificationService:
             'reviewer_name': reviewer_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('feedback_review_submission', user_id, variables)
+        return self._send_notification('feedback_review_submission', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_new_forum_post_reply(self, user_id, course_name, current_year, forum_topic, forum_url, platform_url, poster_name, preferences_url, recipient_name, reply_preview, unsubscribe_url):
+    def send_new_forum_post_reply(self, user_id, course_name, current_year, forum_topic, forum_url, platform_url, poster_name, preferences_url, recipient_name, reply_preview, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send new_forum_post_reply notification.
         Variables: course_name, current_year, forum_topic, forum_url, platform_url, poster_name, preferences_url, recipient_name, reply_preview, unsubscribe_url
@@ -787,10 +794,10 @@ class NotificationService:
             'reply_preview': reply_preview,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('new_forum_post_reply', user_id, variables)
+        return self._send_notification('new_forum_post_reply', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_daily_forum_digest(self, user_id, current_year, digest_date, forum_url, new_replies_count, new_topics_count, platform_url, preferences_url, recipient_name, top_topics, unsubscribe_url):
+    def send_daily_forum_digest(self, user_id, current_year, digest_date, forum_url, new_replies_count, new_topics_count, platform_url, preferences_url, recipient_name, top_topics, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send daily_forum_digest notification.
         Variables: current_year, digest_date, forum_url, new_replies_count, new_topics_count, platform_url, preferences_url, recipient_name, top_topics, unsubscribe_url
@@ -807,10 +814,10 @@ class NotificationService:
             'top_topics': top_topics,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('daily_forum_digest', user_id, variables)
+        return self._send_notification('daily_forum_digest', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_new_personal_message(self, user_id, current_year, message_preview, message_url, platform_url, preferences_url, recipient_name, sender_name, unsubscribe_url):
+    def send_new_personal_message(self, user_id, current_year, message_preview, message_url, platform_url, preferences_url, recipient_name, sender_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send new_personal_message notification.
         Variables: current_year, message_preview, message_url, platform_url, preferences_url, recipient_name, sender_name, unsubscribe_url
@@ -825,10 +832,10 @@ class NotificationService:
             'sender_name': sender_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('new_personal_message', user_id, variables)
+        return self._send_notification('new_personal_message', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_user_added_to_conversation(self, user_id, added_by, conversation_name, conversation_url, current_year, participants, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_user_added_to_conversation(self, user_id, added_by, conversation_name, conversation_url, current_year, participants, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send user_added_to_conversation notification.
         Variables: added_by, conversation_name, conversation_url, current_year, participants, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -844,10 +851,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('user_added_to_conversation', user_id, variables)
+        return self._send_notification('user_added_to_conversation', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_new_course_announcement(self, user_id, announcement_preview, announcement_title, announcement_url, course_name, current_year, platform_url, posted_by, preferences_url, recipient_name, unsubscribe_url):
+    def send_new_course_announcement(self, user_id, announcement_preview, announcement_title, announcement_url, course_name, current_year, platform_url, posted_by, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send new_course_announcement notification.
         Variables: announcement_preview, announcement_title, announcement_url, course_name, current_year, platform_url, posted_by, preferences_url, recipient_name, unsubscribe_url
@@ -864,10 +871,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('new_course_announcement', user_id, variables)
+        return self._send_notification('new_course_announcement', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_comment_learning_plan(self, user_id, comment_preview, commenter_name, current_year, learning_plan_name, plan_url, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_comment_learning_plan(self, user_id, comment_preview, commenter_name, current_year, learning_plan_name, plan_url, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send comment_learning_plan notification.
         Variables: comment_preview, commenter_name, current_year, learning_plan_name, plan_url, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -883,10 +890,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('comment_learning_plan', user_id, variables)
+        return self._send_notification('comment_learning_plan', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_site_backup_status(self, user_id, admin_url, backup_date, backup_duration, backup_size, backup_status, current_year, error_message, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_site_backup_status(self, user_id, admin_url, backup_date, backup_duration, backup_size, backup_status, current_year, error_message, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send site_backup_status notification.
         Variables: admin_url, backup_date, backup_duration, backup_size, backup_status, current_year, error_message, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -904,10 +911,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('site_backup_status', user_id, variables)
+        return self._send_notification('site_backup_status', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_new_software_update(self, user_id, current_year, platform_url, preferences_url, recipient_name, release_notes, scheduled_maintenance, unsubscribe_url, update_url, version):
+    def send_new_software_update(self, user_id, current_year, platform_url, preferences_url, recipient_name, release_notes, scheduled_maintenance, unsubscribe_url, update_url, version, message_type=None, priority=None, channels=None):
         """
         Send new_software_update notification.
         Variables: current_year, platform_url, preferences_url, recipient_name, release_notes, scheduled_maintenance, unsubscribe_url, update_url, version
@@ -923,10 +930,10 @@ class NotificationService:
             'update_url': update_url,
             'version': version,
         }
-        return self._send_notification('new_software_update', user_id, variables)
+        return self._send_notification('new_software_update', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_critical_site_error(self, user_id, affected_service, current_year, error_message, error_time, error_type, error_url, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_critical_site_error(self, user_id, affected_service, current_year, error_message, error_time, error_type, error_url, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send critical_site_error notification.
         Variables: affected_service, current_year, error_message, error_time, error_type, error_url, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -943,10 +950,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('critical_site_error', user_id, variables)
+        return self._send_notification('critical_site_error', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_batch_user_upload_summary(self, user_id, current_year, errors_summary, failed, platform_url, preferences_url, recipient_name, report_url, successful, total_users, unsubscribe_url, upload_date):
+    def send_batch_user_upload_summary(self, user_id, current_year, errors_summary, failed, platform_url, preferences_url, recipient_name, report_url, successful, total_users, unsubscribe_url, upload_date, message_type=None, priority=None, channels=None):
         """
         Send batch_user_upload_summary notification.
         Variables: current_year, errors_summary, failed, platform_url, preferences_url, recipient_name, report_url, successful, total_users, unsubscribe_url, upload_date
@@ -964,10 +971,10 @@ class NotificationService:
             'unsubscribe_url': unsubscribe_url,
             'upload_date': upload_date,
         }
-        return self._send_notification('batch_user_upload_summary', user_id, variables)
+        return self._send_notification('batch_user_upload_summary', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_password_reset_request(self, user_id, current_year, expiry_time, ip_address, platform_url, preferences_url, recipient_name, reset_url, unsubscribe_url):
+    def send_password_reset_request(self, user_id, current_year, expiry_time, ip_address, platform_url, preferences_url, recipient_name, reset_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send password_reset_request notification.
         Variables: current_year, expiry_time, ip_address, platform_url, preferences_url, recipient_name, reset_url, unsubscribe_url
@@ -982,10 +989,10 @@ class NotificationService:
             'reset_url': reset_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('password_reset_request', user_id, variables)
+        return self._send_notification('password_reset_request', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_ilt_booking_confirmation(self, user_id, booking_status, booking_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, unsubscribe_url, venue):
+    def send_ilt_booking_confirmation(self, user_id, booking_status, booking_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, unsubscribe_url, venue, message_type=None, priority=None, channels=None):
         """
         Send ilt_booking_confirmation notification.
         Variables: booking_status, booking_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, unsubscribe_url, venue
@@ -1004,10 +1011,10 @@ class NotificationService:
             'unsubscribe_url': unsubscribe_url,
             'venue': venue,
         }
-        return self._send_notification('ilt_booking_confirmation', user_id, variables)
+        return self._send_notification('ilt_booking_confirmation', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_ilt_session_start_reminder(self, user_id, current_year, join_url, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, time_until, unsubscribe_url, venue):
+    def send_ilt_session_start_reminder(self, user_id, current_year, join_url, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, time_until, unsubscribe_url, venue, message_type=None, priority=None, channels=None):
         """
         Send ilt_session_start_reminder notification.
         Variables: current_year, join_url, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, time_until, unsubscribe_url, venue
@@ -1025,10 +1032,10 @@ class NotificationService:
             'unsubscribe_url': unsubscribe_url,
             'venue': venue,
         }
-        return self._send_notification('ilt_session_start_reminder', user_id, variables)
+        return self._send_notification('ilt_session_start_reminder', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_ilt_session_joining_instructions(self, user_id, current_year, instructions, join_url, meeting_id, passcode, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, unsubscribe_url, venue):
+    def send_ilt_session_joining_instructions(self, user_id, current_year, instructions, join_url, meeting_id, passcode, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, unsubscribe_url, venue, message_type=None, priority=None, channels=None):
         """
         Send ilt_session_joining_instructions notification.
         Variables: current_year, instructions, join_url, meeting_id, passcode, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, unsubscribe_url, venue
@@ -1048,10 +1055,10 @@ class NotificationService:
             'unsubscribe_url': unsubscribe_url,
             'venue': venue,
         }
-        return self._send_notification('ilt_session_joining_instructions', user_id, variables)
+        return self._send_notification('ilt_session_joining_instructions', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_ilt_waitlist_update(self, user_id, current_year, platform_url, preferences_url, recipient_name, session_date, session_name, session_url, unsubscribe_url, waitlist_position, waitlist_status):
+    def send_ilt_waitlist_update(self, user_id, current_year, platform_url, preferences_url, recipient_name, session_date, session_name, session_url, unsubscribe_url, waitlist_position, waitlist_status, message_type=None, priority=None, channels=None):
         """
         Send ilt_waitlist_update notification.
         Variables: current_year, platform_url, preferences_url, recipient_name, session_date, session_name, session_url, unsubscribe_url, waitlist_position, waitlist_status
@@ -1068,10 +1075,10 @@ class NotificationService:
             'waitlist_position': waitlist_position,
             'waitlist_status': waitlist_status,
         }
-        return self._send_notification('ilt_waitlist_update', user_id, variables)
+        return self._send_notification('ilt_waitlist_update', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_ilt_signup_prompt(self, user_id, available_seats, current_year, platform_url, preferences_url, recipient_name, session_date, session_name, session_url, unsubscribe_url):
+    def send_ilt_signup_prompt(self, user_id, available_seats, current_year, platform_url, preferences_url, recipient_name, session_date, session_name, session_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send ilt_signup_prompt notification.
         Variables: available_seats, current_year, platform_url, preferences_url, recipient_name, session_date, session_name, session_url, unsubscribe_url
@@ -1087,10 +1094,10 @@ class NotificationService:
             'session_url': session_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('ilt_signup_prompt', user_id, variables)
+        return self._send_notification('ilt_signup_prompt', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_mentor_connection_request(self, user_id, current_year, message, platform_url, preferences_url, recipient_name, request_url, requester_name, requester_role, unsubscribe_url):
+    def send_mentor_connection_request(self, user_id, current_year, message, platform_url, preferences_url, recipient_name, request_url, requester_name, requester_role, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send mentor_connection_request notification.
         Variables: current_year, message, platform_url, preferences_url, recipient_name, request_url, requester_name, requester_role, unsubscribe_url
@@ -1106,10 +1113,10 @@ class NotificationService:
             'requester_role': requester_role,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('mentor_connection_request', user_id, variables)
+        return self._send_notification('mentor_connection_request', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_performance_review_reminder(self, user_id, current_year, due_date, platform_url, preferences_url, recipient_name, review_period, review_url, reviewee_name, unsubscribe_url):
+    def send_performance_review_reminder(self, user_id, current_year, due_date, platform_url, preferences_url, recipient_name, review_period, review_url, reviewee_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send performance_review_reminder notification.
         Variables: current_year, due_date, platform_url, preferences_url, recipient_name, review_period, review_url, reviewee_name, unsubscribe_url
@@ -1125,10 +1132,10 @@ class NotificationService:
             'reviewee_name': reviewee_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('performance_review_reminder', user_id, variables)
+        return self._send_notification('performance_review_reminder', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_welcome_message(self, user_id, current_year, dashboard_url, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_welcome_message(self, user_id, current_year, dashboard_url, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send welcome_message notification.
         Variables: current_year, dashboard_url, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -1141,10 +1148,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('welcome_message', user_id, variables)
+        return self._send_notification('welcome_message', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_otp_verification(self, user_id, current_year, expires_in, otp_code, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_otp_verification(self, user_id, current_year, expires_in, otp_code, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send otp_verification notification.
         Variables: current_year, expires_in, otp_code, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -1158,10 +1165,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('otp_verification', user_id, variables)
+        return self._send_notification('otp_verification', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_forgot_password_otp(self, user_id, current_year, expires_in, otp_code, platform_url, preferences_url, recipient_name, unsubscribe_url):
+    def send_forgot_password_otp(self, user_id, current_year, expires_in, otp_code, platform_url, preferences_url, recipient_name, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send forgot_password_otp notification.
         Variables: current_year, expires_in, otp_code, platform_url, preferences_url, recipient_name, unsubscribe_url
@@ -1175,10 +1182,10 @@ class NotificationService:
             'recipient_name': recipient_name,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('forgot_password_otp', user_id, variables)
+        return self._send_notification('forgot_password_otp', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
 
-    def send_password_reset_confirmation(self, user_id, current_year, platform_url, preferences_url, recipient_name, reset_time, support_url, unsubscribe_url):
+    def send_password_reset_confirmation(self, user_id, current_year, platform_url, preferences_url, recipient_name, reset_time, support_url, unsubscribe_url, message_type=None, priority=None, channels=None):
         """
         Send password_reset_confirmation notification.
         Variables: current_year, platform_url, preferences_url, recipient_name, reset_time, support_url, unsubscribe_url
@@ -1192,9 +1199,9 @@ class NotificationService:
             'support_url': support_url,
             'unsubscribe_url': unsubscribe_url,
         }
-        return self._send_notification('password_reset_confirmation', user_id, variables)
+        return self._send_notification('password_reset_confirmation', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
-    def send_registration_pending_admin_review(self, user_id, current_year, platform_url, preferences_url, recipient_name):
+    def send_registration_pending_admin_review(self, user_id, current_year, platform_url, preferences_url, recipient_name, message_type=None, priority=None, channels=None):
         """
         Send registration_pending_admin_review notification.
         Variables: current_year, platform_url, preferences_url, recipient_name
@@ -1205,9 +1212,9 @@ class NotificationService:
             'preferences_url': preferences_url,
             'recipient_name': recipient_name,
         }
-        return self._send_notification('registration_pending_admin_review', user_id, variables)
+        return self._send_notification('registration_pending_admin_review', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
-    def send_account_locked(self, user_id, failed_attempts, ban_duration_hours, ban_expires_at, recipient_name, support_url):
+    def send_account_locked(self, user_id, failed_attempts, ban_duration_hours, ban_expires_at, recipient_name, support_url, message_type=None, priority=None, channels=None):
         """
         Send account_locked notification.
         Variables: failed_attempts, ban_duration_hours, ban_expires_at, recipient_name, support_url
@@ -1222,9 +1229,9 @@ class NotificationService:
             'recipient_name': recipient_name,
             'support_url': support_url,
         }
-        return self._send_notification('account_locked', user_id, variables)
+        return self._send_notification('account_locked', user_id, variables, message_type=message_type, priority=priority, channels=channels)
 
-    def send_suspicious_login_alert(self, user_id, ip_address, user_agent, recipient_name, support_url):
+    def send_suspicious_login_alert(self, user_id, ip_address, user_agent, recipient_name, support_url, message_type=None, priority=None, channels=None):
         """
         Send suspicious_login_alert notification.
         Variables: ip_address, login_time, user_agent, recipient_name, support_url
@@ -1238,4 +1245,4 @@ class NotificationService:
             'recipient_name': recipient_name,
             'support_url': support_url,
         }
-        return self._send_notification('suspicious_login_alert', user_id, variables)
+        return self._send_notification('suspicious_login_alert', user_id, variables, message_type=message_type, priority=priority, channels=channels)
