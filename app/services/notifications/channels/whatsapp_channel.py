@@ -27,12 +27,12 @@ class WhatsAppChannel(BaseNotificationChannel):
         super().__init__("whatsapp")
         self.whatsapp_server_url = current_app.config.get(
             "WHATSAPP_GATEWAY_URL"
-        ) or "http://localhost:3000/api"
+        ) or "http://localhost:3000/api/messages"
         self.max_message_length = 1024  # WhatsApp message limit
 
     def send(
         self,
-        recipient: str,
+        phone: str,
         content: str = None,
         messageType: str = "NOTIFICATION",
         priority: str = "NORMAL",
@@ -43,35 +43,38 @@ class WhatsAppChannel(BaseNotificationChannel):
         Send WhatsApp notification.
 
         Args:
-            recipient: Recipient phone number (E.164 format: +1234567890)
+            phone: Recipient phone number (E.164 format: +1234567890 or local: 0761226005)
             content: Message content
-            messageType: Type of message (e.g., "NOTIFICATION", "OTP", "ALERT"  etc.)
-            template_name: Optional template name for WhatsApp approved templates
-            subject: Subject (unused for WhatsApp)
+            messageType: Type of message (e.g., "NOTIFICATION", "OTP", "ALERT")
+            priority: Message priority (e.g., "NORMAL", "HIGH")
+            notification_id: Associated notification ID
             **kwargs: Additional parameters
 
         Returns:
-            dict: Send result
+            dict: Send result with status, delivery_id, and message
         """
-        if not self._is_valid_phone(recipient):
+        if not self._is_valid_phone(phone):
             return {
                 "status": "failed",
                 "message": "Invalid phone number",
-                "error": f"Invalid recipient format. Use E.164 format: {recipient}",
+                "error": f"Invalid phone number format. Use E.164 format (+94...) or local format (07...). Got: {phone}",
             }
+
+        # Convert to E.164 format if needed
+        phone = self._convert_to_e164(phone)
 
         try:
             # Truncate message if exceeds limit
             if len(content) > self.max_message_length:
                 content = content[: self.max_message_length]
                 logger.warning(
-                    f"WhatsApp message truncated for {recipient} "
+                    f"WhatsApp message truncated for {phone} "
                     f"(max length: {self.max_message_length})"
                 )
 
             # Send via custom WhatsApp server
             payload = {
-                "phone": recipient,
+                "phone": phone,
                 "content": content,
                 "messageType": messageType,
                 "priority": priority,
@@ -90,20 +93,20 @@ class WhatsAppChannel(BaseNotificationChannel):
             # Log successful delivery
             delivery_id = self.log_delivery(
                 notification_id=notification_id,
-                recipient=recipient,
+                recipient=phone,
                 status="sent" if is_success else "failed",
                 error_message=None,
             )
 
             logger.info(
-                f"WhatsApp message sent to {recipient} "
-                f"(delivery_id: {delivery_id})"
+                f"WhatsApp message sent to {phone} "
+                f"(delivery_id: {delivery_id}, type: {messageType}, priority: {priority})"
             )
 
             return {
                 "status": "sent" if is_success else "failed",
                 "delivery_id": delivery_id,
-                "message": f"WhatsApp message sent to {recipient}",
+                "message": f"WhatsApp message sent to {phone}",
                 "server_response": result,
             }
 
@@ -114,7 +117,7 @@ class WhatsAppChannel(BaseNotificationChannel):
             # Log failed delivery
             delivery_id = self.log_delivery(
                 notification_id=notification_id,
-                recipient=recipient,
+                recipient=phone,
                 status="failed",
                 error_message=error_msg,
             )
@@ -132,7 +135,7 @@ class WhatsAppChannel(BaseNotificationChannel):
             # Log failed delivery
             delivery_id = self.log_delivery(
                 notification_id=notification_id,
-                recipient=recipient,
+                recipient=phone,
                 status="failed",
                 error_message=error_msg,
             )
@@ -181,7 +184,10 @@ class WhatsAppChannel(BaseNotificationChannel):
 
             # Retry sending
             return self.send(
-                recipient=delivery_log["recipient_phone"],
+                phone=delivery_log["recipient"],
+                content=delivery_log.get("content", ""),
+                messageType=delivery_log.get("messageType", "NOTIFICATION"),
+                priority=delivery_log.get("priority", "NORMAL"),
                 notification_id=delivery_log["notification_id"],
             )
 
@@ -191,91 +197,51 @@ class WhatsAppChannel(BaseNotificationChannel):
 
     def _is_valid_phone(self, phone: str) -> bool:
         """
-        Validate phone number in E.164 format.
+        Validate phone number in E.164 format or local format.
+        Converts local format to E.164 if needed.
 
         Args:
-            phone: Phone number to validate
+            phone: Phone number to validate (E.164 or local format)
 
         Returns:
-            bool: Is valid E.164 format
+            bool: Is valid phone number format
         """
         if not isinstance(phone, str):
             return False
 
         # E.164 format: +[country code][number]
-        pattern = r"^\+[1-9]\d{1,14}$"
-        return re.match(pattern, phone) is not None
-
-    def send_otp(
-        self,
-        recipient: str,
-        otp_code: str,
-        expires_in_mins: int = 5,
-        notification_id: str = None,
-    ) -> dict:
+        e164_pattern = r"^\+[1-9]\d{1,14}$"
+        if re.match(e164_pattern, phone):
+            return True
+        
+        # Local format for Sri Lanka (starts with 0): 07XX XXX XXXX or 0XX XXX XXXX
+        local_pattern = r"^0[0-9]{9}$"
+        if re.match(local_pattern, phone):
+            return True
+        
+        return False
+    
+    def _convert_to_e164(self, phone: str, country_code: str = "94") -> str:
         """
-        Send OTP via WhatsApp.
-
-        Special handler for OTP delivery with standard format.
+        Convert phone number to E.164 format.
 
         Args:
-            recipient: Recipient phone number
-            otp_code: OTP code
-            expires_in_mins: OTP expiration time in minutes
-            notification_id: Associated notification ID
+            phone: Phone number (E.164 or local format)
+            country_code: Country code (default: 94 for Sri Lanka)
 
         Returns:
-            dict: Send result
+            str: Phone number in E.164 format
         """
-        content = (
-            f"Your OTP is: {otp_code}. Valid for {expires_in_mins} minutes. "
-            "Do not share with anyone."
-        )
-        return self.send(
-            recipient=recipient,
-                content=content,
-                notification_id=notification_id,
-                template_name="otp_verification",
-        )
-
-    def send_security_alert(
-        self,
-        recipient: str,
-        alert_type: str,
-        details: dict = None,
-    ) -> dict:
-        """
-        Send security alert via WhatsApp.
-
-        Special handler for security-related notifications.
-
-        Args:
-            recipient: Recipient phone number
-            alert_type: Type of alert (failed_login, account_locked, etc.)
-            details: Additional details dict
-            notification_id: Associated notification ID
-
-        Returns:
-            dict: Send result
-        """
-        if alert_type == "failed_login":
-            attempt_number = details.get("attempt_number", 1) if details else 1
-            content = (
-                f"Alert: Failed login attempt #{attempt_number} on your account. "
-                "If this wasn't you, change your password immediately."
-            )
-        elif alert_type == "account_locked":
-            ban_duration = details.get("ban_duration", "24 hours") if details else "24 hours"
-            content = (
-                f"Your account has been locked for {ban_duration} due to multiple failed login attempts. "
-                "Contact support if you need help."
-            )
-        else:
-            content = f"Security Alert: {alert_type}"
-
-        return self.send(
-            recipient=recipient,
-            content=content,
-            messageType="ALERT",
-            priority="HIGH",
-        )
+        if not phone:
+            return phone
+        
+        # Already in E.164 format
+        if phone.startswith("+"):
+            return phone
+        
+        # Remove leading 0 from local format and add country code
+        if phone.startswith("0"):
+            return f"+{country_code}{phone[1:]}"
+        
+        # No leading 0, just add country code
+        return f"+{country_code}{phone}"
