@@ -312,7 +312,6 @@ def verify_otp():
         user_data = OTPVerificationService.verify_otp(
             otp_code=data["otp"],
             verification_token=verification_token,
-            purpose=data.get("purpose", "email_verification"),
         )
 
         response_data = {
