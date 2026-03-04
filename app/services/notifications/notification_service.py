@@ -61,7 +61,7 @@ class NotificationService:
             self.whatsapp_channel = WhatsAppChannel()
             self.in_app_channel = InAppChannel()
 
-    def _send_notification(self, template_name, user_id, variables):
+    def _send_notification(self, template_name, user_id, variables, message_type=None, priority=None, channels=None):
         """
         Internal method to render templates and send to enabled channels.
         
@@ -69,7 +69,10 @@ class NotificationService:
             template_name: Base name of the template (e.g. 'enrollment_confirmation')
             user_id: ID of the recipient user
             variables: Dictionary of variables for template rendering
-            
+            message_type: Type of message (e.g. 'enrollment_confirmation')
+            priority: Priority level for WhatsApp messages
+            channels: List of predefined channels to use (e.g. ['email', 'whatsapp']).
+                     If None, uses user preferences. If specified, overrides preferences.
         Returns:
             bool: True if processing initiated successfully, False otherwise
         """
@@ -97,33 +100,41 @@ class NotificationService:
             # Fetch user preferences
             prefs = NotificationPreferences.query.filter_by(user_id=user_id).first()
             
-            # Determine enabled channels (Default: Email=True, SMS/WA=False, In-App=True)
-            email_enabled = True
-            sms_enabled = False
-            in_app_enabled = True
-            
-            if prefs:
-                email_enabled = prefs.email_enabled
-                sms_enabled = prefs.sms_enabled
-                in_app_enabled = prefs.in_app_enabled
+            # If channels are predefined, use them. Otherwise use user preferences.
+            if channels:
+                # Normalize channel names to lowercase
+                channels = [ch.lower() for ch in channels]
+                email_enabled = 'email' in channels and bool(user.email)
+                sms_enabled = 'whatsapp' in channels and bool(user.phone)
+                in_app_enabled = 'in_app' in channels
+            else:
+                # Determine enabled channels (Default: Email=True, SMS/WA=False, In-App=True)
+                email_enabled = True
+                sms_enabled = False
+                in_app_enabled = True
+                
+                if prefs:
+                    email_enabled = prefs.email_enabled
+                    sms_enabled = prefs.sms_enabled
+                    in_app_enabled = prefs.in_app_enabled
 
-            # Check for type-specific preferences (overrides global if stricter or just checks specific settings)
-            # Typically, if global is disabled, type is disabled.
-            # If global is enabled, type can disable it.
-            type_pref = NotificationTypePreferences.query.filter_by(
-                user_id=user_id,
-                notification_type=template_name
-            ).first()
+                # Check for type-specific preferences (overrides global if stricter or just checks specific settings)
+                # Typically, if global is disabled, type is disabled.
+                # If global is enabled, type can disable it.
+                type_pref = NotificationTypePreferences.query.filter_by(
+                    user_id=user_id,
+                    notification_type=template_name
+                ).first()
 
-            if type_pref:
-                # If preference record exists, use its values combined with global switch?
-                # Usually type preference is an override.
-                # But if global "Enable Email" is off, specific emails shouldn't be sent.
-                # So we AND them or use global as master switch.
-                email_enabled = email_enabled and type_pref.email
-                # Map global sms_enabled to type whatsapp
-                sms_enabled = sms_enabled and type_pref.whatsapp
-                in_app_enabled = in_app_enabled and type_pref.in_app
+                if type_pref:
+                    # If preference record exists, use its values combined with global switch?
+                    # Usually type preference is an override.
+                    # But if global "Enable Email" is off, specific emails shouldn't be sent.
+                    # So we AND them or use global as master switch.
+                    email_enabled = email_enabled and type_pref.email
+                    # Map global sms_enabled to type whatsapp
+                    sms_enabled = sms_enabled and type_pref.whatsapp
+                    in_app_enabled = in_app_enabled and type_pref.in_app
 
             # ------------------------------------------------------------------
             # 1. Email Channel
@@ -132,24 +143,30 @@ class NotificationService:
                 try:
                     # Load template: notifications/email/{template_name}.html
                     template_path = f"notifications/email/{template_name}.html"
-                    template = self.env.get_template(template_path)
+                    try:
+                        template = self.env.get_template(template_path)
+                    except Exception as template_error:
+                        logger.warning(f"Email template not found for {template_name}: {template_path}. Skipping email.")
+                        template = None
                     
-                    # Render HTML content
-                    html_content = template.render(**variables)
-                    
-                    module = template.make_module(variables)
-                    subject = getattr(module, 'subject', 'Notification')
-                    
-                    # Handle subject interpolation if it contains {{ variables }}
-                    if '{{' in subject:
-                        subject = self.env.from_string(subject).render(**variables)
-                    
-                    # Send
-                    self.email_channel.send(
-                        recipient=user.email,
-                        subject=subject,
-                        html_content=html_content
-                    )
+                    if template:
+                        # Render HTML content
+                        html_content = template.render(**variables)
+                        
+                        module = template.make_module(variables)
+                        subject = getattr(module, 'subject', 'Notification')
+                        
+                        # Handle subject interpolation if it contains {{ variables }}
+                        if '{{' in subject:
+                            subject = self.env.from_string(subject).render(**variables)
+                        
+                        # Send
+                        self.email_channel.send(
+                            recipient=user.email,
+                            subject=subject,
+                            html_content=html_content
+                        )
+                        logger.info(f"Email notification {template_name} sent to {user.email}")
                 except Exception as e:
                     logger.error(f"Error sending email {template_name} to {user.email}: {e}")
 
@@ -208,33 +225,39 @@ class NotificationService:
                 try:
                     # Load template: notifications/in_app/{template_name}.jinja
                     template_path = f"notifications/in_app/{template_name}.jinja"
-                    template = self.env.get_template(template_path)
+                    try:
+                        template = self.env.get_template(template_path)
+                    except Exception as template_error:
+                        logger.warning(f"In-App template not found for {template_name}: {template_path}. Skipping in-app notification.")
+                        template = None
                     
-                    # Extract subject/title
-                    module = template.make_module(variables)
-                    subject = getattr(module, 'subject', 'Notification')
-                    if '{{' in subject:
-                        subject = self.env.from_string(subject).render(**variables)
-                    
-                    # Render body/content
-                    # If template has a 'body' block, use it. Otherwise render whole file.
-                    if 'body' in template.blocks:
-                        ctx = template.new_context(variables)
-                        content = ''.join(template.blocks['body'](ctx))
-                    else:
-                        content = template.render(**variables)
-                    
-                    content = content.strip()
-                    
-                    self.in_app_channel.send(
-                        recipient=user_id,
-                        content=content,
-                        subject=subject,
-                        title=subject,
-                        notification_type=template_name,
-                        # Add any derived action_url or resource info if available in variables
-                        action_url=variables.get('action_url') or variables.get('url') or variables.get('link')
-                    )
+                    if template:
+                        # Extract subject/title
+                        module = template.make_module(variables)
+                        subject = getattr(module, 'subject', 'Notification')
+                        if '{{' in subject:
+                            subject = self.env.from_string(subject).render(**variables)
+                        
+                        # Render body/content
+                        # If template has a 'body' block, use it. Otherwise render whole file.
+                        if 'body' in template.blocks:
+                            ctx = template.new_context(variables)
+                            content = ''.join(template.blocks['body'](ctx))
+                        else:
+                            content = template.render(**variables)
+                        
+                        content = content.strip()
+                        
+                        self.in_app_channel.send(
+                            recipient=user_id,
+                            content=content,
+                            subject=subject,
+                            title=subject,
+                            notification_type=template_name,
+                            # Add any derived action_url or resource info if available in variables
+                            action_url=variables.get('action_url') or variables.get('url') or variables.get('link')
+                        )
+                        logger.info(f"In-App notification {template_name} sent to user {user_id}")
                 except Exception as e:
                     logger.error(f"Error sending in-app {template_name}: {e}")
 
@@ -243,7 +266,27 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Critical error in _send_notification: {e}")
             return False
-
+        
+    def send_register_otp(self, user_id, otp_code, expiry_minutes=None, message_type=None, priority=None, channels=None):
+        """
+        Send registration OTP notification.
+        Variables: otp_code, expiry_minutes
+        
+        Args:
+            user_id: ID of the recipient user
+            otp_code: The OTP code to send
+            expiry_minutes: Minutes the OTP is valid for (default: 5)
+            message_type: WhatsApp message type (auto-determined if not provided)
+            priority: WhatsApp priority level (auto-determined if not provided)
+            channels: List of channels to use (e.g. ['email', 'whatsapp', 'in_app']).
+                     If None, uses user preferences.
+        """
+        variables = {
+            "otp_code": otp_code,
+            "expiry_minutes": expiry_minutes or 5,
+        }
+        return self._send_notification('registration_otp', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+    
     def send_enrollment_confirmation(self, user_id, course_name, course_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, start_date, unsubscribe_url):
         """
         Send enrollment_confirmation notification.
@@ -916,45 +959,6 @@ class NotificationService:
             'unsubscribe_url': unsubscribe_url,
         }
         return self._send_notification('password_reset_request', user_id, variables)
-
-
-    def send_suspicious_login_alert(self, user_id, current_year, device, ip_address, location, login_time, platform_url, preferences_url, recipient_name, secure_url, unsubscribe_url):
-        """
-        Send suspicious_login_alert notification.
-        Variables: current_year, device, ip_address, location, login_time, platform_url, preferences_url, recipient_name, secure_url, unsubscribe_url
-        """
-        variables = {
-            'current_year': current_year,
-            'device': device,
-            'ip_address': ip_address,
-            'location': location,
-            'login_time': login_time,
-            'platform_url': platform_url,
-            'preferences_url': preferences_url,
-            'recipient_name': recipient_name,
-            'secure_url': secure_url,
-            'unsubscribe_url': unsubscribe_url,
-        }
-        return self._send_notification('suspicious_login_alert', user_id, variables)
-
-
-    def send_account_locked(self, user_id, ban_duration_hours, ban_expires_at, current_year, failed_attempts, platform_url, preferences_url, recipient_name, support_url, unsubscribe_url):
-        """
-        Send account_locked notification.
-        Variables: ban_duration_hours, ban_expires_at, current_year, failed_attempts, platform_url, preferences_url, recipient_name, support_url, unsubscribe_url
-        """
-        variables = {
-            'ban_duration_hours': ban_duration_hours,
-            'ban_expires_at': ban_expires_at,
-            'current_year': current_year,
-            'failed_attempts': failed_attempts,
-            'platform_url': platform_url,
-            'preferences_url': preferences_url,
-            'recipient_name': recipient_name,
-            'support_url': support_url,
-            'unsubscribe_url': unsubscribe_url,
-        }
-        return self._send_notification('account_locked', user_id, variables)
 
 
     def send_ilt_booking_confirmation(self, user_id, booking_status, booking_url, current_year, instructor_name, platform_url, preferences_url, recipient_name, session_date, session_name, session_time, unsubscribe_url, venue):
