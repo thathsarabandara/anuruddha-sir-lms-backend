@@ -98,8 +98,7 @@ class OTPVerificationService(BaseService):
                     currrent_year=datetime.utcnow().year, 
                     platform_url=config.get("FRONTEND_URL"), 
                     preferences_url=config.get("PREFERENCES_URL")+"/nofication/prefences", 
-                    recipient_name=user.first_name or user.username, 
-                    recipient_name=user.username, 
+                    recipient_name=user.first_name or user.username,
                     messagType="NOTIFICATION", 
                     priority="NORMAL", 
                     channels=['email', 'whatsapp']
