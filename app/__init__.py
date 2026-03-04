@@ -127,7 +127,6 @@ def create_app(config_name="development"):
         NotificationBatch,
         NotificationDeliveryLog,
         NotificationPreferences,
-        NotificationTemplate,
         NotificationTypePreferences,
         OTPRequest,
         PasswordResetToken,
