@@ -24,7 +24,7 @@ services:
       MAIL_USERNAME: stormprojects47@gmail.com
       MAIL_PASSWORD: mkdjcfuyamilnzak
       MAIL_DEFAULT_SENDER: stormprojects47@gmail.com
-      WHATSAPP_GATEWAY_URL: http://localhost:3000/api
+      WHATSAPP_GATEWAY_URL: http://localhost:3000/api/messages
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
