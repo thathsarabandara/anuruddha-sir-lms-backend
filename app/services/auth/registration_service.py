@@ -21,6 +21,7 @@ from app.models.auth.user_role import UserRole
 from app.models.users.student_profile import StudentProfile
 from app.models.users.teacher_profile import TeacherProfile
 from app.services.base_service import BaseService
+from app.services.notifications.notification_service import NotificationService
 from app.utils.auth import OTPManager, PasswordManager, SessionManager
 from app.utils.file_handler import FileHandler
 from app.utils.validators import validate_email, validate_password
@@ -182,10 +183,8 @@ class RegistrationService(BaseService):
             otp_expiry = OTPManager.get_otp_expiry_time()
 
             # Determine OTP channel: use whatsapp if student passed whatsapp_number
-            otp_channel = ["whatsapp", "email"]
+            otp_channel = "both"
             otp_phone = phone
-
-            OTPManager.send_otp(email, otp_phone, otp_code, username,expiry_minutes=5)
 
             otp_request = OTPRequest(
                 user_id=user_id,
@@ -207,6 +206,20 @@ class RegistrationService(BaseService):
             db.session.add(otp_request)
             db.session.commit()
 
+            # ── Send registration OTP notification (after commit) ─────────
+            # Now the user exists in the database for the notification service to query
+            try:
+                NotificationService().send_register_otp(
+                    user_id=user_id,
+                    otp_code=otp_code,
+                    message_type="OTP",
+                    priority="HIGH",
+                    channels=['email', 'whatsapp'] if otp_channel == "both" else [otp_channel],
+                )
+            except Exception as notification_error:
+                # Log the error but don't fail registration if notification fails
+                logger.warning(f"Failed to send registration OTP notification: {str(notification_error)}")
+
             # ── Redis OTP cache ───────────────────────────────────────────
             SessionManager.store_otp(
                 verification_token,
@@ -226,7 +239,6 @@ class RegistrationService(BaseService):
 
             return (
                 {
-                    "user_id": user_id,
                     "email": email,
                     "username": username,
                     "first_name": first_name,
@@ -289,9 +301,18 @@ class RegistrationService(BaseService):
 
             user = User.query.filter_by(user_id=otp_request.user_id).first()
 
-            OTPManager.send_otp(user.email, user.phone, otp_code, user.username, expiry_minutes=5)
-
             db.session.commit()
+
+            try:
+                NotificationService().send_register_otp(
+                    user_id=user.user_id,
+                    otp_code=otp_code,
+                    message_type="OTP Resend",
+                    priority="HIGH",
+                    channels=['email', 'whatsapp'] if channel == "both" else [channel],
+                )
+            except Exception as notification_error:
+                logger.warning(f"Failed to send OTP resend notification: {str(notification_error)}")
 
             # Update Redis
             otp_data["channel"] = channel
