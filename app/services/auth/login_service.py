@@ -34,87 +34,28 @@ class LoginService(BaseService):
         so that the authentication flow is never blocked by a notification error.
         """
         try:
-            from app.models.notifications.notification_template import NotificationTemplate
-            from app.utils.notification_helpers import NotificationTemplateRenderer
+            from app.services.notifications import NotificationService
 
-            NOTIF_TYPE = "account_locked"
-            ban_expires_str = (
-                ban_expires_at.strftime("%Y-%m-%d %H:%M UTC") if ban_expires_at else "N/A"
+            service = NotificationService()
+            service.send_account_locked(
+                user_id=user.user_id,
+                failed_attempts=failed_attempts,
+                ban_duration_hours=LoginService.BAN_DURATION_HOURS,
+                ban_expires_at=ban_expires_at,
+                recipient_name=f"{user.first_name} {user.last_name}".strip() or user.email,
+                support_url=current_app.config.get("SUPPORT_URL", "#"),
+                message_type="ALERT",
+                priority="HIGH",
+                channels=["email", "whatsapp"],
             )
-
-            template_vars = {
-                "recipient_name": (
-                    f"{user.first_name} {user.last_name}".strip() or user.email
-                ),
-                "failed_attempts": str(failed_attempts),
-                "ban_duration_hours": str(LoginService.BAN_DURATION_HOURS),
-                "ban_expires_at": ban_expires_str,
-                "support_url": current_app.config.get("SUPPORT_URL", "#"),
-            }
-
-            def _get_tpl(channel):
-                return (
-                    NotificationTemplate.query
-                    .filter_by(
-                        notification_type=NOTIF_TYPE,
-                        channel=channel,
-                        is_active=True,
-                    )
-                    .order_by(NotificationTemplate.version.desc())
-                    .first()
-                )
-
-            def _render(content):
-                return NotificationTemplateRenderer.render_template(content, template_vars)
-
-            # ── Email ────────────────────────────────────────────────────────
-            try:
-                from app.services.notifications.channels.email_channel import EmailChannel
-
-                tpl = _get_tpl("email")
-                if tpl:
-                    EmailChannel().send(
-                        recipient=user.email,
-                        subject=_render(tpl.subject or "Your account has been locked"),
-                        content=_render(tpl.template_text) if tpl.template_text else None,
-                        html_content=_render(tpl.template_html) if tpl.template_html else None,
-                    )
-                    logger.info("account_locked email sent to %s", user.email)
-                else:
-                    logger.warning("No active account_locked email template found")
-            except Exception as exc:
-                logger.error(
-                    "account_locked email failed for %s: %s", user.email, exc, exc_info=True
-                )
-
-            # ── WhatsApp ─────────────────────────────────────────────────────
-            if getattr(user, "phone", None):
-                try:
-                    from app.services.notifications.channels.whatsapp_channel import WhatsAppChannel
-
-                    tpl = _get_tpl("whatsapp")
-                    if tpl and tpl.template_text:
-                        WhatsAppChannel().send(
-                            recipient=user.phone,
-                            content=_render(tpl.template_text),
-                            messageType="ALERT",
-                            priority="HIGH",
-                        )
-                        logger.info("account_locked WhatsApp sent to %s", user.phone)
-                    else:
-                        logger.warning("No active account_locked WhatsApp template found")
-                except Exception as exc:
-                    logger.error(
-                        "account_locked WhatsApp failed for %s: %s",
-                        user.phone, exc, exc_info=True,
-                    )
+            logger.info("account_locked notification sent to user %s", user.user_id)
 
         except Exception as exc:
             logger.error(
-                "_send_account_locked_notification failed: %s", exc, exc_info=True
+                "_send_account_locked_notification failed for user %s: %s", user.user_id, exc, exc_info=True
             )
 
-    @staticmethod
+
     @staticmethod
     def _send_login_notification(user, ip_address, user_agent):
         """Send suspicious login alert notification via email and WhatsApp.
@@ -123,86 +64,28 @@ class LoginService(BaseService):
         so that the authentication flow is never blocked by a notification error.
         """
         try:
-            from app.models.notifications.notification_template import NotificationTemplate
-            from app.utils.notification_helpers import NotificationTemplateRenderer
+            from app.services.notifications import NotificationService
 
-            NOTIF_TYPE = "suspicious_login_alert"
-            login_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-
-            template_vars = {
-                "recipient_name": (
-                    f"{user.first_name} {user.last_name}".strip() or user.email
-                ),
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-                "login_time": login_time,
-                "support_url": current_app.config.get("SUPPORT_URL", "#"),
-            }
-
-            def _get_tpl(channel):
-                return (
-                    NotificationTemplate.query
-                    .filter_by(
-                        notification_type=NOTIF_TYPE,
-                        channel=channel,
-                        is_active=True,
-                    )
-                    .order_by(NotificationTemplate.version.desc())
-                    .first()
-                )
-
-            def _render(content):
-                return NotificationTemplateRenderer.render_template(content, template_vars)
-
-            # ── Email ────────────────────────────────────────────────────────
-            try:
-                from app.services.notifications.channels.email_channel import EmailChannel
-
-                tpl = _get_tpl("email")
-                if tpl:
-                    EmailChannel().send(
-                        recipient=user.email,
-                        subject=_render(tpl.subject or "Suspicious login activity detected"),
-                        content=_render(tpl.template_text) if tpl.template_text else None,
-                        html_content=_render(tpl.template_html) if tpl.template_html else None,
-                    )
-                    logger.info("suspicious_login_alert email sent to %s", user.email)
-                else:
-                    logger.warning("No active suspicious_login_alert email template found")
-            except Exception as exc:
-                logger.error(
-                    "suspicious_login_alert email failed for %s: %s", user.email, exc, exc_info=True
-                )
-
-            # ── WhatsApp ─────────────────────────────────────────────────────
-            if getattr(user, "phone", None):
-                try:
-                    from app.services.notifications.channels.whatsapp_channel import WhatsAppChannel
-
-                    tpl = _get_tpl("whatsapp")
-                    if tpl and tpl.template_text:
-                        WhatsAppChannel().send(
-                            recipient=user.phone,
-                            content=_render(tpl.template_text),
-                            messageType="ALERT",
-                            priority="HIGH",
-                        )
-                        logger.info("suspicious_login_alert WhatsApp sent to %s", user.phone)
-                    else:
-                        logger.warning("No active suspicious_login_alert WhatsApp template found")
-                except Exception as exc:
-                    logger.error(
-                        "suspicious_login_alert WhatsApp failed for %s: %s",
-                        user.phone, exc, exc_info=True,
-                    )
+            service = NotificationService()
+            service.send_suspicious_login_alert(
+                user_id=user.user_id,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                recipient_name=f"{user.first_name} {user.last_name}".strip() or user.email,
+                support_url=current_app.config.get("SUPPORT_URL", "#"),
+                message_type="ALERT",
+                priority="HIGH",
+                channels=["email", "whatsapp"], 
+            )
+            logger.info("suspicious_login_alert notification sent to user %s", user.user_id)
 
         except Exception as exc:
             logger.error(
-                "_send_login_notification failed: %s", exc, exc_info=True
+                "_send_login_notification failed for user %s: %s", user.user_id, exc, exc_info=True
             )
 
     @staticmethod
-    def login_user(email, password, ip_address, user_agent, device_name=None):
+    def login_user(email, password, ip_address=None, user_agent=None, device_name=None):
         """
         Authenticate user and issue tokens
 
