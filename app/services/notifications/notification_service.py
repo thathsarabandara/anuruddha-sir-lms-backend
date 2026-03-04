@@ -1178,3 +1178,36 @@ class NotificationService:
             'recipient_name': recipient_name,
         }
         return self._send_notification('registration_pending_admin_review', user_id, variables)
+
+    def send_account_locked(self, user_id, failed_attempts, ban_duration_hours, ban_expires_at, recipient_name, support_url):
+        """
+        Send account_locked notification.
+        Variables: failed_attempts, ban_duration_hours, ban_expires_at, recipient_name, support_url
+        """
+        ban_expires_str = (
+            ban_expires_at.strftime("%Y-%m-%d %H:%M UTC") if ban_expires_at else "N/A"
+        )
+        variables = {
+            'failed_attempts': str(failed_attempts),
+            'ban_duration_hours': str(ban_duration_hours),
+            'ban_expires_at': ban_expires_str,
+            'recipient_name': recipient_name,
+            'support_url': support_url,
+        }
+        return self._send_notification('account_locked', user_id, variables)
+
+    def send_suspicious_login_alert(self, user_id, ip_address, user_agent, recipient_name, support_url):
+        """
+        Send suspicious_login_alert notification.
+        Variables: ip_address, login_time, user_agent, recipient_name, support_url
+        """
+        from datetime import datetime
+        login_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+        variables = {
+            'ip_address': ip_address,
+            'login_time': login_time,
+            'user_agent': user_agent,
+            'recipient_name': recipient_name,
+            'support_url': support_url,
+        }
+        return self._send_notification('suspicious_login_alert', user_id, variables)
