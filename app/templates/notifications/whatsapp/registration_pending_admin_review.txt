@@ -5,10 +5,9 @@ Hi {{ recipient_name }}! 👋
 
 Great news! Your email has been verified. ✓
 
-Your account is now *pending admin review*. ⏳
+Your account is now *under admin review*. ⏳
 
-*Account Status:*
-✓ Email Verified
+*Account Status:* ✓ Email Verified
 ⏳ Awaiting Admin Approval
 📧 You'll get a message once approved
 
@@ -20,20 +19,19 @@ Questions? Visit: {{ platform_url }}
 {% endblock %}
 
 {% block singlish %}
-ආදරණීය {{ recipient_name }} ට! 👋
+ආදරණීය පුතා/දියණිය {{ recipient_name }} ට! 👋
 
-සුබ පුවතුයි! ඔබගේ ඉමේල් තහවුරු විය. ✓
+හොඳ ආරංචියක්! ඔබගේ විද්‍යුත් තැපෑල සත්‍යාපනය කර ඇත. ✓
 
-ඔබගේ ගිණුම දැන් *පරිපාලක අනුමතිට බලා* ඉන්න ඇත. ⏳
+ඔබගේ ගිණුම දැන් *පරිපාලක සමාලෝචනය යටතේ පවතී*. ⏳
 
-*ගිණුම තත්ත්වය:*
-✓ ඉමේල් තහවුරු
-⏳ පරිපාලක අනුමතිට බලා ඉන්න
-📧 අනුමත විෙ ඔබට පණිවිඩයක් ලැබෙනු ඇත
+*ගිණුම තත්ත්වය:* ✓ ඉමේල් තහවුරු
+⏳ පරිපාලක අනුමැතිය බලාපොරොත්තුවෙන්
+📧 අනුමත වූ පසු ඔබට පණිවිඩයක් ලැබෙනු ඇත
 
 මෙය සාමාන්‍යයෙන් *24–48 පැය* ගතවේ.
 
-එතුමා වෙතින්, අපගේ ප්ලැට්ෆෝම ගවේෂණ කරන්න! 🎓
+මේ අතරතුර, අපගේ වේදිකාව ගවේෂණය කර පවතින පාඨමාලා පරීක්ෂා කරන්න! 🎓
 
-ප්‍රශ්ණ ඇතිද? {{ platform_url }} ගිය 
+ප්‍රශ්ණ ඇතිද? {{ platform_url }}
 {% endblock %}
