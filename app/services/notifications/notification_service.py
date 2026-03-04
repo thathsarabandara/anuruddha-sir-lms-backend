@@ -6,6 +6,7 @@ Uses Jinja2 templates for content generation.
 
 import logging
 import os
+from datetime import datetime
 from flask import current_app
 from jinja2 import Environment, FileSystemLoader
 
@@ -96,6 +97,16 @@ class NotificationService:
                 variables['recipient_name'] = f"{user.first_name} {user.last_name}"
             variables['user_email'] = user.email
             variables['user_phone'] = user.phone
+            
+            # Add footer variables if not already provided (required by email base template)
+            if 'platform_url' not in variables:
+                variables['platform_url'] = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+            if 'unsubscribe_url' not in variables:
+                variables['unsubscribe_url'] = f"{variables['platform_url']}/unsubscribe"
+            if 'preferences_url' not in variables:
+                variables['preferences_url'] = f"{variables['platform_url']}/notifications/preferences"
+            if 'current_year' not in variables:
+                variables['current_year'] = datetime.now().year
 
             # Fetch user preferences
             prefs = NotificationPreferences.query.filter_by(user_id=user_id).first()
@@ -143,13 +154,12 @@ class NotificationService:
                 try:
                     # Load template: notifications/email/{template_name}.html
                     template_path = f"notifications/email/{template_name}.html"
+                    html_content = None
+                    plain_text_content = None
+                    subject = "Notification"
+                    
                     try:
                         template = self.env.get_template(template_path)
-                    except Exception as template_error:
-                        logger.warning(f"Email template not found for {template_name}: {template_path}. Skipping email.")
-                        template = None
-                    
-                    if template:
                         # Render HTML content
                         html_content = template.render(**variables)
                         
@@ -159,11 +169,25 @@ class NotificationService:
                         # Handle subject interpolation if it contains {{ variables }}
                         if '{{' in subject:
                             subject = self.env.from_string(subject).render(**variables)
-                        
-                        # Send
+                    except Exception as template_error:
+                        logger.warning(f"Email template not found for {template_name}: {template_path}. Skipping email.")
+                        html_content = None
+                    
+                    # Try to render plain text version if it exists
+                    try:
+                        text_template_path = f"notifications/email/{template_name}.txt"
+                        text_template = self.env.get_template(text_template_path)
+                        plain_text_content = text_template.render(**variables)
+                    except Exception:
+                        # Plain text template not available, that's okay
+                        pass
+                    
+                    if html_content:
+                        # Send with HTML content (and optional plain text fallback)
                         self.email_channel.send(
                             recipient=user.email,
                             subject=subject,
+                            content=plain_text_content,  # Plain text fallback
                             html_content=html_content
                         )
                         logger.info(f"Email notification {template_name} sent to {user.email}")
