@@ -60,7 +60,6 @@ from app.models.notifications import (
     NotificationBatch,
     NotificationDeliveryLog,
     NotificationPreferences,
-    NotificationTemplate,
     NotificationTypePreferences,
 )
 
@@ -138,7 +137,6 @@ __all__ = [
     "NotificationPreferences",
     "NotificationTypePreferences",
     "NotificationDeliveryLog",
-    "NotificationTemplate",
     "NotificationBatch",
     # Reviews Models (4)
     "Review",
@@ -164,7 +162,3 @@ __all__ = [
     "Refund",
     "Coupon",
 ]
-
-# Import other models as they are created
-# from app.models.quiz import Quiz
-# from app.models.notifications import Notification
