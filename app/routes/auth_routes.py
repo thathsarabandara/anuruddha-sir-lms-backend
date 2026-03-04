@@ -95,30 +95,7 @@ def set_verification_token_cookie(response, verification_token):
 
     return response
 
-def set_password_reset_token_cookie(response, password_reset_token):
-    """
-    Set password reset token as HttpOnly cookie for OTP password reset flow
 
-    Args:
-        response: Flask response object
-        password_reset_token: Password reset token to set in cookie (5 min expiry)
-
-    Returns:
-        Updated response object with password reset token cookie set
-    """
-    is_secure = current_app.config.get("ENV") == "production"
-
-    response[0].set_cookie(
-        "password_reset_token",
-        password_reset_token,
-        max_age=300,  # 5 minutes (OTP expiry)
-        secure=is_secure,
-        httponly=True,
-        samesite="Strict",
-        path="/",
-    )
-
-    return response
 
 # ===================== Registration Endpoints =====================
 
@@ -148,7 +125,6 @@ def register():
                                   Supported: png, jpg, jpeg, gif, webp (max 5MB)
 
     ── Student-only fields ─────────────────────────────────────────────────
-        whatsapp_number         – WhatsApp contact number
         date_of_birth           – 'YYYY-MM-DD'
         grade_level             – e.g. 'Grade 10', 'A/L', 'Undergraduate'
         school                  – School / institution name
@@ -161,7 +137,7 @@ def register():
         subjects_taught         – List of subjects  e.g. ["Maths","Physics"]
         years_of_experience     – Integer
         language_of_instruction – e.g. 'English', 'Sinhala'
-        professional_bio        – Detailed bio
+        bio        – Detailed bio
         address                 – Physical address
 
     Returns:
@@ -179,6 +155,20 @@ def register():
             if not data.get(field):
                 return error_response(f"{field} is required", 400)
 
+        # Validate email format
+        try:
+            validate_email(data["email"])
+        except Exception as e:
+            return error_response(str(e), 400)
+
+        # Validate phone if provided (optional but must be valid format)
+        phone = data.get("phone")
+        if phone:
+            try:
+                phone = validate_phone(phone)
+            except Exception as e:
+                return error_response(str(e), 400)
+
         role = data.get("role", "student")
 
         # Build kwargs shared by both roles
@@ -187,8 +177,8 @@ def register():
             password=data["password"],
             first_name=data["first_name"],
             last_name=data["last_name"],
-            phone=data.get("phone"),
-            profile_picture_url=data.get("profile_picture"),
+            phone=phone, 
+            profile_picture=data.get("profile_picture"),
             role=role,
             address=data.get("address"),
         )
@@ -234,9 +224,9 @@ def register():
         return error_response(str(e), 400)
     except Exception as e:
         from app.exceptions import ConflictError
+        logger.error(f"Registration error: {str(e)}", exc_info=True)
         if isinstance(e, ConflictError):
             return error_response(str(e), 409)
-        logger.error(f"Registration error: {str(e)}", exc_info=True)
         return error_response(str(e), 400)
 
 
@@ -252,7 +242,10 @@ def resend_otp():
         400: Invalid token or rate limit exceeded
     """
     try:
-        data = request.get_json()
+        # Accept both JSON and form data
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()
 
         # Get verification token from cookie (with fallback to request body)
         verification_token = request.cookies.get("verification_token") or data.get("token")
@@ -279,6 +272,9 @@ def resend_otp():
 
     except ValidationError as e:
         return error_response(str(e), 400)
+    except Exception as e:
+        logger.error(f"Resend OTP error: {str(e)}", exc_info=True)
+        return error_response(str(e), 400)
 
 
 # ===================== OTP Verification Endpoints =====================
@@ -301,7 +297,10 @@ def verify_otp():
         400: Invalid OTP or expired token
     """
     try:
-        data = request.get_json()
+        # Accept both JSON and form data
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()
 
         # Get verification token from cookie (with fallback to request body)
         verification_token = request.cookies.get("verification_token") or data.get("token")
@@ -311,7 +310,6 @@ def verify_otp():
 
         # Verify OTP
         user_data = OTPVerificationService.verify_otp(
-            email=data["email"],
             otp_code=data["otp"],
             verification_token=verification_token,
             purpose=data.get("purpose", "email_verification"),
@@ -352,6 +350,9 @@ def verify_otp():
 
     except ValidationError as e:
         return error_response(str(e), 400)
+    except Exception as e:
+        logger.error(f"OTP verification error: {str(e)}", exc_info=True)
+        return error_response(str(e), 400)
 
 
 # ===================== Login Endpoints =====================
@@ -376,7 +377,9 @@ def login():
         403: Account banned or not verified
     """
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()        
 
         # Get client IP and user agent
         ip_address = request.remote_addr
@@ -405,6 +408,7 @@ def login():
 
     except Exception as e:
         from app.exceptions import AuthenticationError
+        logger.error(f"Login error: {str(e)}", exc_info=True)
         if isinstance(e, AuthenticationError):
             return error_response(str(e), 401)
         return error_response(str(e), 400)
@@ -490,6 +494,7 @@ def verify_token():
 
     except Exception as e:
         from app.exceptions import AuthenticationError
+        logger.error(f"Token verification error: {str(e)}", exc_info=True)
         if isinstance(e, AuthenticationError):
             return error_response(str(e), 401)
         return error_response(str(e), 400)
@@ -528,6 +533,7 @@ def logout():
         return response
 
     except Exception as e:
+        logger.error(f"Logout error: {str(e)}", exc_info=True)
         return error_response(str(e), 400)
 
 
@@ -547,32 +553,32 @@ def forgot_password():
         }
 
     Returns:
-        200: Password reset link and OTP sent to email
+        200: Password reset link sent to email and WhatsApp with token in URL params
     """
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()
 
-        reset_token, otp_code = PasswordResetService.initiate_password_reset(data["email"])
+        reset_token = PasswordResetService.initiate_password_reset(data["email"])
 
         response = success_response(
             data={
                 "token": reset_token,
                 "expires_in": 3600,
-                "message": "Check your email for password reset link and OTP. Valid for 1 hour.",
+                "message": "Check your email and WhatsApp for password reset link. Valid for 1 hour.",
             },
-            message="Password reset link sent to email",
+            message="Password reset link sent to email and WhatsApp",
             status_code=200,
         )
 
-        # Set password reset token cookie
-        response = set_password_reset_token_cookie(response, reset_token)
         return response
     except Exception as e:
+        logger.error(f"Forgot password error: {str(e)}", exc_info=True)
         return error_response(str(e), 400)
 
 
-@bp.route("/verify-reset-token", methods=["GET"])
-@validate_json("token")
+@bp.route("/verify-reset-token", methods=["GET", "POST"])
 @handle_exceptions
 def verify_reset_token():
     """
@@ -581,53 +587,66 @@ def verify_reset_token():
     Frontend calls this endpoint to validate the reset token before allowing
     user access to the reset password form.
 
-
     Returns:
         200: Reset token is valid
         400: Invalid, expired, or already used reset token
     """
     try:
-        data = request.get_json()
+        # Get token from query params (GET) or body (POST)
+        token = None
+        
+        if request.method == "GET":
+            token = request.args.get("token")
+        else:
+            data = request.get_json(force=True, silent=True) or {}
+            if not data and request.form:
+                data = request.form.to_dict()
+            token = data.get("token")
 
-        password_reset_token = request.cookies.get("password_reset_token") or data.get("token")
+        if not token:
+            return error_response("Reset token is required", 400)
 
-        verification_data = PasswordResetService.verify_reset_token(password_reset_token)
+        verification_data = PasswordResetService.verify_reset_token(token)
 
         return success_response(
             data=verification_data,
-            message="Reset token is valid",
+            message="Reset token is valid. You can now reset your password.",
             status_code=200,
         )
 
     except ValidationError as e:
         return error_response(str(e), 400)
+    except Exception as e:
+        logger.error(f"Reset token verification error: {str(e)}", exc_info=True)
+        return error_response(str(e), 400)
 
 
 @bp.route("/reset-password", methods=["POST"])
-@validate_json("token", "otp", "password", "confirm_password")
+@validate_json("token", "password", "confirm_password")
 @handle_exceptions
 def reset_password():
     """
-    Reset password with OTP verification
+    Reset password with token verification (no OTP required)
 
     Request Body:
         {
-            "token": "unique_reset_token",
-            "otp": "123456",
+            "token": "reset_token_from_email",
             "password": "NewSecurePassword123!",
             "confirm_password": "NewSecurePassword123!"
         }
 
     Returns:
         200: Password reset successfully
-        400: Invalid token, OTP, or validation error
+        400: Invalid token or validation error
     """
     try:
-        data = request.get_json()
+        # Accept both JSON and form data
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()
 
         reset_data = PasswordResetService.reset_password(
             reset_token=data["token"],
-            otp_code=data["otp"],
             new_password=data["password"],
             confirm_password=data["confirm_password"],
         )
@@ -639,6 +658,9 @@ def reset_password():
         )
 
     except ValidationError as e:
+        return error_response(str(e), 400)
+    except Exception as e:
+        logger.error(f"Password reset error: {str(e)}", exc_info=True)
         return error_response(str(e), 400)
 
 
@@ -662,7 +684,11 @@ def change_password():
         401: Current password is incorrect
     """
     try:
-        data = request.get_json()
+        # Accept both JSON and form data
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()
+
         user_id = request.user_id
 
         change_data = PasswordResetService.change_password(
@@ -680,6 +706,7 @@ def change_password():
 
     except Exception as e:
         from app.exceptions import AuthenticationError
+        logger.error(f"Change password error: {str(e)}", exc_info=True)
         if isinstance(e, AuthenticationError):
             return error_response(str(e), 401)
         return error_response(str(e), 400)
@@ -714,6 +741,7 @@ def get_login_history():
         )
 
     except Exception as e:
+        logger.error(f"Get login history error: {str(e)}", exc_info=True)
         return error_response(str(e), 400)
 
 
@@ -737,7 +765,9 @@ def verify_email():
         200: Email verified successfully
     """
     try:
-        data = request.get_json()
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()
 
         # In a real implementation, this would verify the email separately
         # For now, OTP verification handles this
@@ -749,4 +779,5 @@ def verify_email():
         )
 
     except Exception as e:
+        logger.error(f"Email verification error: {str(e)}", exc_info=True)
         return error_response(str(e), 400)
