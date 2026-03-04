@@ -33,7 +33,7 @@ class AccessToken(db.Model):
         db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False
     )
 
-    # Foreign Key
+    # Foreign Keys
     user_id = db.Column(
         db.String(36), db.ForeignKey("users.user_id"), nullable=False, index=True
     )
