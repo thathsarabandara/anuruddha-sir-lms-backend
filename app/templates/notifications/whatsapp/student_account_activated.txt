@@ -1,0 +1,35 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+✅ *Account Activated*
+
+Hi {{recipient_name}}! 👋
+
+Good news! Your student account has been *activated* by our admin team. 
+
+You can now:
+✅ Access all courses
+📚 Enroll in any available course
+🎓 Start learning immediately
+📞 Get support anytime
+
+Ready to begin? Head to your dashboard now! 🚀
+
+🔗 *Dashboard:* {{dashboard_url}}
+{% endblock %}
+
+{% block singlish %}
+✅ *ගිණුම සක්‍රිය කරන ලදී*
+
+ආදරණීය පුතා/දියණිය {{recipient_name}} ! 👋
+
+සුබ ආරංචියක්! ඔබගේ ශිෂ්‍ය ගිණුම අපගේ පරිපාලක කණ්ඩායම විසින් *සක්‍රිය* කර ඇත..
+
+ඔබට දැන් පුළුවන්:
+✅ සියලුම පාඨමාලා සඳහා ප්‍රවේශ වන්න
+📚 පවතින ඕනෑම පාඨමාලාවකට ලියාපදිංචි වන්න
+🎓 වහාම ඉගෙනීම අරඹන්න
+📞 ඕනෑම වේලාවක සහාය ලබා ගන්න
+
+ආරම්භ කිරීමට සූදානම්ද? දැන් ඔබේ ඩැෂ්බෝර්ඩ වෙත යන්න! 🚀
+{% endblock %}
