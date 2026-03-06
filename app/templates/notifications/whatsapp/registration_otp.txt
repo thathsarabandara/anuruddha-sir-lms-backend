@@ -16,7 +16,7 @@ If you didn't request this, ignore this message.
 {% endblock %}
 
 {% block singlish %}
-ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 👋
+ආයුබෝවන් {{recipient_name}} ට! 👋
 
 අනුරුද්ධ සර් LMS වෙත සාදරයෙන් පිළිගනිමු!
 
