@@ -1,0 +1,61 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+👨‍🏫 *Welcome Instructor! Your Account is Approved*
+
+Hi {{recipient_name}}! 👋
+
+Congratulations! Your instructor registration has been *approved* ✅
+
+Your account is now active and ready! You can start creating courses immediately.
+
+*Get Started Teaching:*
+📚 Create your first course
+📝 Add lessons & assignments
+👥 Manage student enrollments
+📊 Track student progress
+💬 Communicate with students
+⭐ Earn ratings from students
+
+*Quick Setup:*
+1️⃣ Complete your instructor profile
+2️⃣ Create your first course
+3️⃣ Add course content
+4️⃣ Launch and start teaching!
+
+*Resources:*
+📖 Instructor Guide: {{support_url}}
+📞 Support: {{support_url}}
+
+Ready to inspire students? Let's go! 🚀
+{% endblock %}
+
+{% block singlish %}
+👨‍🏫 *සාදරයෙන් පිළිගනිමු! ඔබේ ගිණුම අනුමත කරන ලදී*
+
+ආයුබෝවන් {{recipient_name}}! 👋
+
+සුභ පැතුම්! ඔබගේ උපදේශක ලියාපදිංචිය *අනුමත කර ඇත* ✅
+
+ඔබගේ ගිණුම දැන් සක්‍රිය සහ සූදානම්! ඔබට වහාම පාඨමාලා නිර්මාණය කිරීම ආරම්භ කළ හැකිය.
+
+*ඉගැන්වීම ගිණුම:*
+📚 ඔබේ පළමු පාඨමාලාව සාදන්න
+📝 පාඩම් සහ පැවරුම් එකතු කරන්න
+👥 සිසුන් බඳවා ගැනීම් කළමනාකරණය කරන්න
+📊 ශිෂ්‍ය ප්‍රගතිය නිරීක්ෂණය කරන්න
+💬 සිසුන් සමඟ සන්නිවේදනය කරන්න
+⭐ සිසුන්ගෙන් ශ්‍රේණිගත කිරීම් උපයන්න
+
+*ඉක්මන් සැකසුම:*
+1️⃣ ඔබේ උපදේශක පැතිකඩ සම්පූර්ණ කරන්න
+2️⃣ ඔබේ පළමු පාඨමාලාව සාදන්න
+3️⃣ පාඨමාලා අන්තර්ගතය එක් කරන්න
+4️⃣ දියත් කර ඉගැන්වීම ආරම්භ කරන්න!
+
+*සම්පත්:*
+📖 ගුරු මාර්ගෝපදේශ: {{support_url}}
+📞 සහාය: {{support_url}}
+
+සිසුන් දිරිමත් කිරීමට සූදානම්ද? අපි යමු! 🚀
+{% endblock %}
