@@ -3,6 +3,7 @@ Authentication Services Package
 Services for handling all authentication workflows
 """
 
+from app.services.auth.admin_user_management_service import AdminUserManagementService
 from app.services.auth.login_history_service import LoginHistoryService
 from app.services.auth.login_service import LoginService
 from app.services.auth.logout_service import LogoutService
@@ -13,6 +14,7 @@ from app.services.auth.token_refresh_service import TokenRefreshService
 from app.services.auth.token_verification_service import TokenVerificationService
 
 __all__ = [
+    "AdminUserManagementService",
     "RegistrationService",
     "OTPVerificationService",
     "LoginService",
