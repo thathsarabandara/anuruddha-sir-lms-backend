@@ -1,0 +1,36 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#059669" %}
+{% set icon = "✅" %}
+{% set category = "Account Status" %}
+{% set title = "Your Account is Activated" %}
+{% set subject = "Account Activated - Welcome Instructor {{recipient_name}}" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Excellent news! Your instructor account has been reviewed and <strong style="color:#059669;">activated</strong> by our admin team. You are now ready to start teaching and managing your courses.</p>
+
+<table cellpadding="0" cellspacing="0" style="background:#ecfdf5;border-left:4px solid #059669;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;">
+<tr><td>
+<p style="margin:0;color:#065f46;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Status Update</p>
+<p style="margin:0;color:#333;font-size:14px;line-height:1.9;">✅ Your instructor account is now <strong>Active</strong><br/>📚 Create and manage your courses<br/>👥 Manage students and enrollments<br/>📊 Access detailed analytics<br/>📞 Contact support if you need help</p>
+</td></tr>
+</table>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:16px 0;">You can now:</p>
+<ul style="color:#333333;font-size:15px;line-height:1.8;margin:16px 0;">
+<li>Create and publish courses</li>
+<li>Add course content and assignments</li>
+<li>Track student progress</li>
+<li>Grade assignments and quizzes</li>
+<li>Communicate with students</li>
+</ul>
+
+<p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Best regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{dashboard_url}}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Go to Dashboard →</a>
+</td></tr>
+{% endblock %}
