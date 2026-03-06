@@ -19,7 +19,7 @@ Questions? Visit: {{ platform_url }}
 {% endblock %}
 
 {% block singlish %}
-ආදරණීය පුතා/දියණිය {{ recipient_name }} ට! 👋
+ආයුබෝවන් {{ recipient_name }} ට! 👋
 
 හොඳ ආරංචියක්! ඔබගේ විද්‍යුත් තැපෑල සත්‍යාපනය කර ඇත. ✓
 
