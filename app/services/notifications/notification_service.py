@@ -1246,3 +1246,87 @@ class NotificationService:
             'support_url': support_url,
         }
         return self._send_notification('suspicious_login_alert', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_student_account_activated(self, user_id, recipient_name, dashboard_url, support_url, message_type=None, priority=None, channels=None):
+        """
+        Send student_account_activated notification.
+        Variables: recipient_name, dashboard_url, support_url
+        """
+        variables = {
+            'recipient_name': recipient_name,
+            'dashboard_url': dashboard_url,
+            'support_url': support_url,
+        }
+        return self._send_notification('student_account_activated', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_student_account_banned(self, user_id, recipient_name, ban_reason, banned_at, ban_expires_at, support_url, message_type=None, priority=None, channels=None):
+        """
+        Send student_account_banned notification.
+        Variables: recipient_name, ban_reason, banned_at, ban_expires_at, support_url
+        """
+        # Format dates for display
+        banned_at_str = banned_at.strftime("%Y-%m-%d %H:%M") if banned_at else "Unknown"
+        ban_expires_at_str = ban_expires_at.strftime("%Y-%m-%d %H:%M") if ban_expires_at else None
+        
+        variables = {
+            'recipient_name': recipient_name,
+            'ban_reason': ban_reason or 'Not specified',
+            'banned_at': banned_at_str,
+            'ban_expires_at': ban_expires_at_str,
+            'support_url': support_url,
+        }
+        return self._send_notification('student_account_banned', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_teacher_account_activated(self, user_id, recipient_name, dashboard_url, support_url, message_type=None, priority=None, channels=None):
+        """
+        Send teacher_account_activated notification.
+        Variables: recipient_name, dashboard_url, support_url
+        """
+        variables = {
+            'recipient_name': recipient_name,
+            'dashboard_url': dashboard_url,
+            'support_url': support_url,
+        }
+        return self._send_notification('teacher_account_activated', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_teacher_account_banned(self, user_id, recipient_name, ban_reason, banned_at, ban_expires_at, support_url, message_type=None, priority=None, channels=None):
+        """
+        Send teacher_account_banned notification.
+        Variables: recipient_name, ban_reason, banned_at, ban_expires_at, support_url
+        """
+        # Format dates for display
+        banned_at_str = banned_at.strftime("%Y-%m-%d %H:%M") if banned_at else "Unknown"
+        ban_expires_at_str = ban_expires_at.strftime("%Y-%m-%d %H:%M") if ban_expires_at else None
+        
+        variables = {
+            'recipient_name': recipient_name,
+            'ban_reason': ban_reason or 'Not specified',
+            'banned_at': banned_at_str,
+            'ban_expires_at': ban_expires_at_str,
+            'support_url': support_url,
+        }
+        return self._send_notification('teacher_account_banned', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_student_welcome_first_approval(self, user_id, recipient_name, dashboard_url, support_url, message_type=None, priority=None, channels=None):
+        """
+        Send student_welcome_first_approval notification.
+        Variables: recipient_name, dashboard_url, support_url
+        """
+        variables = {
+            'recipient_name': recipient_name,
+            'dashboard_url': dashboard_url,
+            'support_url': support_url,
+        }
+        return self._send_notification('student_welcome_first_approval', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_teacher_welcome_first_approval(self, user_id, recipient_name, dashboard_url, support_url, message_type=None, priority=None, channels=None):
+        """
+        Send teacher_welcome_first_approval notification.
+        Variables: recipient_name, dashboard_url, support_url
+        """
+        variables = {
+            'recipient_name': recipient_name,
+            'dashboard_url': dashboard_url,
+            'support_url': support_url,
+        }
+        return self._send_notification('teacher_welcome_first_approval', user_id, variables, message_type=message_type, priority=priority, channels=channels)
