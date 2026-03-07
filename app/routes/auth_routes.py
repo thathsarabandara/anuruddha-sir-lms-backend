@@ -789,7 +789,7 @@ def verify_email():
 @bp.route("/students", methods=["GET"])
 @handle_exceptions
 @require_auth
-@require_role("admin")
+@require_role("admin","superadmin")
 def list_students():
     """
     List all students with optional status filtering
@@ -835,10 +835,10 @@ def list_students():
         return error_response(message="Failed to list students", status_code=500)
 
 
-@bp.route("/students/<student_id>/activate", methods=["POST"])
+@bp.route("/students/activate/<student_id>", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin")
+@require_role("admin","superadmin")
 def activate_student(student_id):
     """
     Activate a student account
@@ -870,11 +870,11 @@ def activate_student(student_id):
         return error_response(message="Failed to activate student", status_code=500)
 
 
-@bp.route("/students/<student_id>/ban", methods=["POST"])
+@bp.route("/students/ban/<student_id>", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin")
-@validate_json
+@require_role("admin","superadmin")
+@validate_json()
 def ban_student(student_id):
     """
     Ban a student account
@@ -934,7 +934,7 @@ def ban_student(student_id):
 @bp.route("/teachers", methods=["GET"])
 @handle_exceptions
 @require_auth
-@require_role("admin")
+@require_role("admin","superadmin")
 def list_teachers():
     """
     List all teachers with optional status filtering
@@ -983,7 +983,7 @@ def list_teachers():
 @bp.route("/teachers/<teacher_id>/activate", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin")
+@require_role("admin","superadmin")
 def activate_teacher(teacher_id):
     """
     Activate a teacher account
@@ -1018,8 +1018,8 @@ def activate_teacher(teacher_id):
 @bp.route("/teachers/<teacher_id>/ban", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin")
-@validate_json
+@require_role("admin","superadmin")
+@validate_json()
 def ban_teacher(teacher_id):
     """
     Ban a teacher account
