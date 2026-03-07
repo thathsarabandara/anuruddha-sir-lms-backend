@@ -12,7 +12,7 @@ Your course activity *{{activity_name}}* is starting very soon!
 
 Get ready and be on time! 🙌
 
-🔗 *View activity:* {{activity_url}}
+🎯 View Activity: {{activity_url}}
 {% endblock %}
 
 {% block singlish %}
@@ -27,5 +27,5 @@ Get ready and be on time! 🙌
 
 ප්‍රමාද නොවෙන්න! 😄
 
-🔗 *බලන්න:* {{activity_url}}
+🎯 බලන්න: {{activity_url}}
 {% endblock %}
