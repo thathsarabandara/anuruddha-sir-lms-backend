@@ -72,46 +72,29 @@ class AdminUserManagementService(BaseService):
                     f"Invalid status filter. Must be one of: {', '.join(valid_statuses)}"
                 )
             
-            # Start query with student role users
+            # Start query with student role users, joined with account status
             query = db.session.query(User).join(
                 UserRole, User.user_id == UserRole.user_id
             ).join(
                 Role, UserRole.role_id == Role.role_id
+            ).outerjoin(
+                UserAccountStatus, User.user_id == UserAccountStatus.user_id
             ).filter(Role.role_name == 'student')
             
             # Apply status filter if provided
             if status_filter:
-                account_status = db.session.query(UserAccountStatus).filter(
-                    UserAccountStatus.user_id == User.user_id
-                ).correlate(User)
-                
                 if status_filter == 'active':
                     query = query.filter(
-                        db.exists(
-                            db.session.query(1).filter(
-                                (UserAccountStatus.user_id == User.user_id),
-                                (UserAccountStatus.is_active == True),
-                                (UserAccountStatus.is_banned == False)
-                            )
-                        )
+                        (UserAccountStatus.is_active == True) &
+                        (UserAccountStatus.is_banned == False)
                     )
                 elif status_filter == 'pending':
                     query = query.filter(
-                        db.exists(
-                            db.session.query(1).filter(
-                                (UserAccountStatus.user_id == User.user_id),
-                                (UserAccountStatus.is_active == False)
-                            )
-                        )
+                        UserAccountStatus.is_active == False
                     )
                 elif status_filter == 'banned':
                     query = query.filter(
-                        db.exists(
-                            db.session.query(1).filter(
-                                (UserAccountStatus.user_id == User.user_id),
-                                (UserAccountStatus.is_banned == True)
-                            )
-                        )
+                        UserAccountStatus.is_banned == True
                     )
             
             # Get total count
@@ -183,7 +166,7 @@ class AdminUserManagementService(BaseService):
             try:
                 recipient_name = f"{user.first_name} {user.last_name}".strip()
                 dashboard_url = f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/dashboard"
-                support_url = f"{current_app.config.get('SUPPORT_URL', 'http://localhost:5173')}/support"
+                support_url = f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/support"
                 
                 if is_first_activation:
                     # Send welcome message for first-time approval
@@ -271,7 +254,7 @@ class AdminUserManagementService(BaseService):
             try:
                 recipient_name = f"{user.first_name} {user.last_name}".strip()
                 banned_at = account_status.banned_at if account_status.banned_at else datetime.utcnow()
-                support_url = f"{current_app.config.get('SUPPORT_URL', 'http://localhost:5173')}/support"
+                support_url = f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/support"
                 
                 _send_notification_safely(
                     'send_student_account_banned',
@@ -326,42 +309,29 @@ class AdminUserManagementService(BaseService):
                     f"Invalid status filter. Must be one of: {', '.join(valid_statuses)}"
                 )
             
-            # Start query with teacher role users
+            # Start query with teacher role users, joined with account status
             query = db.session.query(User).join(
                 UserRole, User.user_id == UserRole.user_id
             ).join(
                 Role, UserRole.role_id == Role.role_id
+            ).outerjoin(
+                UserAccountStatus, User.user_id == UserAccountStatus.user_id
             ).filter(Role.role_name == 'teacher')
             
             # Apply status filter if provided
             if status_filter:
                 if status_filter == 'active':
                     query = query.filter(
-                        db.exists(
-                            db.session.query(1).filter(
-                                (UserAccountStatus.user_id == User.user_id),
-                                (UserAccountStatus.is_active == True),
-                                (UserAccountStatus.is_banned == False)
-                            )
-                        )
+                        (UserAccountStatus.is_active == True) &
+                        (UserAccountStatus.is_banned == False)
                     )
                 elif status_filter == 'pending':
                     query = query.filter(
-                        db.exists(
-                            db.session.query(1).filter(
-                                (UserAccountStatus.user_id == User.user_id),
-                                (UserAccountStatus.is_active == False)
-                            )
-                        )
+                        UserAccountStatus.is_active == False
                     )
                 elif status_filter == 'banned':
                     query = query.filter(
-                        db.exists(
-                            db.session.query(1).filter(
-                                (UserAccountStatus.user_id == User.user_id),
-                                (UserAccountStatus.is_banned == True)
-                            )
-                        )
+                        UserAccountStatus.is_banned == True
                     )
             
             # Get total count
