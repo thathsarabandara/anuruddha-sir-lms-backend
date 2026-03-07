@@ -9,6 +9,7 @@ from datetime import datetime
 from app import db
 from app.exceptions import AuthenticationError
 from app.models.auth import AccessToken, User
+from app.models.auth.user_account_status import UserAccountStatus
 from app.services.base_service import BaseService
 from app.utils.auth import TokenManager
 
@@ -57,7 +58,8 @@ class TokenVerificationService(BaseService):
 
                 # Verify user still exists and is active
                 user = User.query.filter_by(user_id=user_id).first()
-                if not user or not user.is_active:
+                user_status = UserAccountStatus.query.filter_by(user_id=user_id).first() if user else None
+                if not user or not user_status.is_active or user_status.is_banned:
                     raise AuthenticationError("User account is not active")
 
                 # Calculate remaining time
