@@ -8,6 +8,7 @@ import logging
 from app import db
 from app.exceptions import AuthenticationError
 from app.models.auth import RefreshToken, User
+from app.models.auth.user_account_status import UserAccountStatus
 from app.services.base_service import BaseService
 from app.utils.auth import SessionManager, TokenManager
 
@@ -61,7 +62,8 @@ class TokenRefreshService(BaseService):
 
             # Get user from database to verify they still exist and are active
             user = User.query.filter_by(user_id=user_id).first()
-            if not user or not user.is_active:
+            user_status = UserAccountStatus.query.filter_by(user_id=user_id).first() if user else None
+            if not user or not user_status.is_active or user_status.is_banned:
                 raise AuthenticationError("User account is not active")
 
             # Generate new access token
