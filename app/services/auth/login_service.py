@@ -44,7 +44,7 @@ class LoginService(BaseService):
                 ban_expires_at=ban_expires_at,
                 recipient_name=f"{user.first_name} {user.last_name}".strip() or user.email,
                 support_url=current_app.config.get("SUPPORT_URL", "#"),
-                message_type="ALERT",
+                message_type="OTP",
                 priority="HIGH",
                 channels=["email", "whatsapp"],
             )
@@ -73,7 +73,7 @@ class LoginService(BaseService):
                 user_agent=user_agent,
                 recipient_name=f"{user.first_name} {user.last_name}".strip() or user.email,
                 support_url=current_app.config.get("SUPPORT_URL", "#"),
-                message_type="ALERT",
+                message_type="OTP",
                 priority="HIGH",
                 channels=["email", "whatsapp"], 
             )
@@ -107,6 +107,7 @@ class LoginService(BaseService):
             user = User.query.filter(
                 (User.email == email) | (User.username == email)
             ).first()
+            account_status = UserAccountStatus.query.filter_by(user_id=user.user_id).first() if user else None
 
             if not user:
                 # Track attempt globally by email
@@ -114,11 +115,9 @@ class LoginService(BaseService):
                 raise AuthenticationError("Invalid email or password")
 
             # Check if account is verified
-            if not user.email_verified or not user.is_active:
+            if not user.email_verified or not account_status.is_active:
                 raise AuthenticationError("Account has not been verified")
 
-            # Check account ban status
-            account_status = UserAccountStatus.query.filter_by(user_id=user.user_id).first()
             if account_status and account_status.is_banned:
                 if account_status.ban_expires_at > datetime.utcnow():
                     remaining_hours = (
@@ -178,7 +177,7 @@ class LoginService(BaseService):
 
             roleid = UserRole.query.filter_by(user_id=user.user_id).first()
             if roleid:
-                role_name = Role.query.filter_by(role_id=roleid.role_id).first().name
+                role_name = Role.query.filter_by(role_id=roleid.role_id).first().role_name
             # Generate tokens and store them in database
             access_token = TokenManager.generate_access_token(
                 user.user_id, user.email, user.username, role_name, store_in_db=True
