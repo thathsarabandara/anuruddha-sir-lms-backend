@@ -1,8 +1,11 @@
 """Password Manager Utility"""
 
 import bcrypt
+import logging
 
 from app.exceptions import ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 class PasswordManager:
@@ -29,11 +32,21 @@ class PasswordManager:
         """Verify plain password against hashed password"""
         try:
             if not plain_password or not hashed_password:
+                logger.debug(f"Password verification failed: empty password or hash")
                 return False
-            return bcrypt.checkpw(
-                plain_password.encode("utf-8"), hashed_password.encode("utf-8")
-            )
+            
+            # Ensure hashed_password is bytes for bcrypt.checkpw()
+            if isinstance(hashed_password, str):
+                hashed_password_bytes = hashed_password.encode("utf-8")
+            else:
+                hashed_password_bytes = hashed_password
+            
+            plain_password_bytes = plain_password.encode("utf-8")
+            result = bcrypt.checkpw(plain_password_bytes, hashed_password_bytes)
+            logger.debug(f"Password verification: {result}")
+            return result
         except Exception as e:
+            logger.error(f"Password verification error: {str(e)}", exc_info=True)
             raise ValidationError(f"Password verification failed: {str(e)}")
 
     @staticmethod
