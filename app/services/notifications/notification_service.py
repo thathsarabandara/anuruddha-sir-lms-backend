@@ -221,8 +221,6 @@ class NotificationService:
                                 message_type = "OTP"
                             elif template_name == "password_reset_request" or "forgot_password" in template_name.lower():
                                 message_type = "OTP"
-                            elif "alert" in template_name.lower() or "suspicious" in template_name.lower():
-                                message_type = "ALERT"
                         
                         if not priority:
                             priority = "NORMAL"  # Default
@@ -230,10 +228,12 @@ class NotificationService:
                                 priority = "HIGH"
                             elif template_name == "password_reset_request" or "forgot_password" in template_name.lower():
                                 priority = "HIGH"
-                            elif "alert" in template_name.lower() or "suspicious" in template_name.lower():
+                            elif "alert" in template_name.lower() or "suspicious" in template_name.lower() or "locked" in template_name.lower():
                                 priority = "HIGH"
                             elif "urgent" in template_name.lower():
                                 priority = "HIGH"
+                        
+                        logger.info(f"Sending WhatsApp notification {template_name} to {user.phone} - MessageType: {message_type}, Priority: {priority}, ContentLength: {len(content)}")
                         
                         send_result = self.whatsapp_channel.send(
                             phone=user.phone,
