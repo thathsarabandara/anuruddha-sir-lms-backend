@@ -46,7 +46,7 @@ SUPERADMIN_CREATE_TIME = datetime.utcnow()
 SUPERADMIN_USER = {
     "user_id": SUPERADMIN_ID,
     "username": "superadmin_admin",
-    "email": "superadmin@lms.com",
+    "email": "stormprojects47@gmail.com",
     "password_hash": hash_password("SuperAdmin@123"),
     "first_name": "Super",
     "last_name": "Admin",
