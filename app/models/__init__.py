@@ -26,9 +26,7 @@ from app.models.users import (
     TeacherProfile,
     UserActivityLog,
     UserPreferences,
-    UserProfile,
     UserStatistics,
-    UserSuspensionLog,
 )
 
 # Import all certificates models
@@ -105,14 +103,12 @@ __all__ = [
     "EmailVerificationToken",
     "AccessToken",
     "RefreshToken",
-    # Users Models (7)
+    # Users Models (5)
     "StudentProfile",
     "TeacherProfile",
-    "UserProfile",
     "UserPreferences",
     "UserActivityLog",
     "UserStatistics",
-    "UserSuspensionLog",
     # Courses Models (11)
     "CourseCategory",
     "Course",
