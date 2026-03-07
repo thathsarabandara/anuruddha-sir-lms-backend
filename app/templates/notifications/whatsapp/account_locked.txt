@@ -11,7 +11,7 @@ Your account has been *temporarily locked* due to *{{failed_attempts}} consecuti
 🕐 *Unlocks At:* {{ban_expires_at}}
 
 If this wasn't you, your account may be at risk. Contact support immediately:
-� Contact Support: {{support_url}}
+🔗 *Support:* {{support_url}}
 {% endblock %}
 
 {% block singlish %}
@@ -25,5 +25,5 @@ If this wasn't you, your account may be at risk. Contact support immediately:
 🕐 *නැවත ලොගින් කළ හැකි:* {{ban_expires_at}}
 
 ඔබ නොකළේ නම් ඔබේ ගිණුම අනතුරේ! ඉක්මනින් සහාය ඇමතුම් කරන්න:
-� සහාය : {{support_url}}
+🔗 *සහාය:* {{support_url}}
 {% endblock %}
