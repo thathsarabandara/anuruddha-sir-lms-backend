@@ -1,0 +1,29 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ⚠️
+
+We detected a new login to your account.
+
+🕐 *Time:* {{login_time}}
+🌐 *IP Address:* {{ip_address}}
+💻 *Device:* {{user_agent}}
+
+If this wasn't you, please secure your account immediately or immediately inform us.
+
+🔗 *Need Help?* Contact: {{support_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! ⚠️
+
+අපි ඔබගේ ගිණුමට නව පිවිසුමක් අනාවරණය කර ගත්තෙමු.
+
+🕐 *වේලාව:* {{login_time}}
+🌐 *IP ලිපිනය:* {{ip_address}}
+💻 *උපකරණය:* {{user_agent}}
+
+මේ ඔබ නොවේ නම්, කරුණාකර වහාම ඔබගේ ගිණුම සුරක්ෂිත කරන්න හෝ වහාම අපට දන්වන්න..
+
+🔗 *උදව් අවශ්‍යද?* අමතන්න: {{support_url}}
+{% endblock %}

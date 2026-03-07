@@ -1,0 +1,12 @@
+{% set subject = "💬 New Reply — {{forum_topic}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{poster_name}} replied to the forum discussion '{{forum_topic}}' in {{course_name}}.
+
+REPLY PREVIEW
+-------------
+"{{reply_preview}}"
+
+ACTION: Join discussion → {{forum_url}}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#4F46E5" %}
+{% set icon = "⏳" %}
+{% set category = "Account & Authentication" %}
+{% set title = "Registration Under Review" %}
+{% set subject = "Registration Under Review — {{platform_name}}" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Congratulations! Your email has been verified and your account is <strong>pending admin review</strong>. 🎉</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">We're reviewing your registration details to ensure the security and quality of our community. This typically takes <strong>24-48 hours</strong>.</p>
+
+<table cellpadding="0" cellspacing="0" style="background:#f0f9ff;border-left:4px solid #4F46E5;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#333;font-size:14px;line-height:1.7;"><strong>✓ Email Verified</strong><br/><strong>⏳ Awaiting Admin Approval</strong><br/><strong>📧 You'll be notified once approved</strong></p></td></tr></table>
+
+<p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">While you wait, familiarize yourself with our platform and course offerings. You'll be able to enroll and start learning immediately once your account is approved.</p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{platform_url}}" style="display:inline-block;background:#4F46E5;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Explore Courses →</a>
+</td></tr>
+{% endblock %}

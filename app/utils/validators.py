@@ -82,24 +82,57 @@ def validate_username(username):
 
 def validate_phone(phone):
     """
-    Validate phone number format
+    Validate phone number format (supports Sri Lankan phone numbers)
+
+    Accepts Sri Lankan phone formats:
+    - 10 digits: 9471928289 (with optional country code prefix)
+    - With +94: +94 71928289 or +94771928289
+    - With leading 0: 0771928289
+    - With separators: 071-792-8289 or 071 792 8289
 
     Args:
         phone (str): Phone number to validate
 
     Returns:
-        str: Valid phone number
+        str: Normalized phone number (without separators, 10 digits)
 
     Raises:
         ValidationError: If phone is invalid
     """
-    # Remove common separators
+    if not phone or not isinstance(phone, str):
+        raise ValidationError("Phone number must be a non-empty string")
+
+    # Remove common separators and spaces
     phone_clean = re.sub(r"[\s\-\(\)\.+]", "", phone)
 
-    if not phone_clean.isdigit() or len(phone_clean) < 10:
-        raise ValidationError("Invalid phone number format")
+    # Remove country code +94 or 0094 prefix if present
+    if phone_clean.startswith("0094"):
+        phone_clean = phone_clean[4:]  # Remove "0094"
+    elif phone_clean.startswith("94"):
+        phone_clean = phone_clean[2:]  # Remove "94"
+    elif phone_clean.startswith("+94"):
+        phone_clean = phone_clean[3:]  # Remove "+94"
 
-    return phone
+    # Remove leading 0 if present (for numbers like 0771928289)
+    if phone_clean.startswith("0"):
+        phone_clean = phone_clean[1:]
+
+    # Validate: must be 9 digits after normalization (SL format without country code)
+    if not phone_clean.isdigit() or len(phone_clean) != 9:
+        raise ValidationError(
+            "Invalid Sri Lankan phone format. Expected 10 digits (e.g., 0771928289) "
+            "or with country code (e.g., +94771928289)"
+        )
+
+    # Validate that it starts with valid Sri Lankan mobile prefixes (7x for mobile)
+    # Sri Lanka mobile prefixes: 70, 71, 72, 73, 74, 75, 76, 77, 78, 79 (Dialog, Airtel, Hutch, Mobitel, SLT)
+    if not phone_clean.startswith(("7", "1")):  # Allow 7x or 1x (for legacy/special numbers)
+        raise ValidationError(
+            "Invalid Sri Lankan mobile prefix. Number must start with 7x (e.g., 0771928289)"
+        )
+
+    # Return normalized 10-digit format with leading 0
+    return f"0{phone_clean}"
 
 
 def validate_string(value, min_length=1, max_length=255, field_name="Field"):

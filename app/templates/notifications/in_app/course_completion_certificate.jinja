@@ -1,0 +1,16 @@
+{% set subject = "🎓 Course Completed — Certificate Ready" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Congratulations! You have successfully completed {{course_name}}. Your certificate is ready to download.
+
+DETAILS
+-------
+Course           : {{course_name}}
+Completed On     : {{completion_date}}
+Certificate ID   : {{certificate_id}}
+
+Share your achievement with the world!
+
+ACTION: Download certificate → {{certificate_url}}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% set subject = "🏅 New Badge Created — {{badge_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+A new badge has been created on the platform.
+
+DETAILS
+-------
+Badge Name    : {{badge_name}}
+Description   : {{badge_description}}
+Created By    : {{created_by}}
+For Course    : {{course_name}}
+
+ACTION: View badge → {{badge_url}}
+{% endblock %}

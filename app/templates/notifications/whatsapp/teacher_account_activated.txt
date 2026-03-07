@@ -1,0 +1,38 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+✅ *Account Activated*
+
+Hi {{recipient_name}}! 👋
+
+Excellent news! Your instructor account has been *activated*. You're ready to start teaching! 🎓
+
+You can now:
+✅ Create and publish courses
+📚 Add course content & assignments
+👥 Manage student enrollments
+📊 View detailed analytics
+💬 Communicate with your students
+
+Ready to start? Head to your instructor dashboard! 🚀
+
+🔗 *Dashboard:* {{dashboard_url}}
+{% endblock %}
+
+{% block singlish %}
+✅ *ගිණුම සක්‍රිය කරන ලදී*
+
+ආදරණීය {{recipient_name}}! 👋
+
+විශිෂ්ට ආරංචියක්! ඔබගේ උපදේශක ගිණුම *සක්‍රිය කර ඇත*. ඔබ ඉගැන්වීම ආරම්භ කිරීමට සූදානම්! 🎓
+
+ඔබට දැන් පුළුවන්:
+✅ පාඨමාලා නිර්මාණය කර ප්‍රකාශයට පත් කරන්න
+📚 පාඨමාලා සामග්‍රී සහ පැවරුම් එකතු කරන්න
+� පාඨමාලා අන්තර්ගතය සහ පැවරුම් එක් කරන්න
+👥 සිසුන් බඳවා ගැනීම් කළමනාකරණය කරන්න
+📊 සවිස්තරාත්මක විශ්ලේෂණ බලන්න
+💬 ඔබේ සිසුන් සමඟ සන්නිවේදනය කරන්න
+
+ආරම්භ කිරීමට සූදානම්ද? ඔබේ ගුරු ඩැෂ්බෝර්ඩ වෙත යන්න! 🚀
+{% endblock %}

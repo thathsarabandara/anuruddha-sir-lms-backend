@@ -1,0 +1,15 @@
+{% set subject = "📝 Essay / Question Graded — {{lesson_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your essay or lesson question has been reviewed and graded.
+
+DETAILS
+-------
+Course    : {{course_name}}
+Lesson    : {{lesson_name}}
+Grade     : {{grade}} / {{max_grade}}
+Feedback  : {{feedback}}
+
+ACTION: View graded work → {{lesson_url}}
+{% endblock %}

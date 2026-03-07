@@ -1,0 +1,16 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#059669" %}
+{% set icon = "🎓" %}
+{% set category = "Achievements & Feedback" %}
+{% set title = "Course Completed — Certificate Awarded" %}
+{% set subject = "🎉 Congratulations! You completed {{course_name}} — Certificate Ready" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p><p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">You have successfully completed <strong>{{course_name}}</strong>! Your certificate is now ready to download and share.</p><table cellpadding="0" cellspacing="0" style="background:#ecfdf5;border-left:4px solid #059669;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#333;font-size:14px;line-height:1.7;">📘 <strong>Course:</strong> {{course_name}}<br/>📅 <strong>Completed On:</strong> {{completion_date}}<br/>🔖 <strong>Certificate ID:</strong> {{certificate_id}}</p></td></tr></table><p style="color:#555555;font-size:14px;line-height:1.7;margin:0 0 8px;">Share your achievement on LinkedIn or with your employer. You deserve it!</p><p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Warm regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{certificate_url}}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Download Certificate →</a>
+</td></tr>
+{% endblock %}

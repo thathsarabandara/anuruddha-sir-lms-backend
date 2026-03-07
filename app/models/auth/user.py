@@ -48,16 +48,13 @@ class User(db.Model):
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=True)
-    profile_picture_url = db.Column(db.Text, nullable=True)
+    profile_picture = db.Column(db.Text, nullable=True)
     bio = db.Column(db.Text, nullable=True)
 
     # Verification Status
     email_verified = db.Column(db.Boolean, default=False, nullable=False, index=True)
     phone_verified = db.Column(db.Boolean, default=False, nullable=False)
-
-    # Account Status
-    is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
-
+    
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
     updated_at = db.Column(
@@ -66,8 +63,15 @@ class User(db.Model):
     last_login = db.Column(db.DateTime, nullable=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
 
-    # Relationships
-    roles = db.relationship("UserRole", backref="user", lazy=True, cascade="all, delete-orphan")
+    access_tokens = db.relationship(
+        "AccessToken", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
+    refresh_tokens = db.relationship(
+        "RefreshToken", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
+    user_roles = db.relationship(
+        "UserRole", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
     account_status = db.relationship(
         "UserAccountStatus", backref="user", uselist=False, cascade="all, delete-orphan"
     )

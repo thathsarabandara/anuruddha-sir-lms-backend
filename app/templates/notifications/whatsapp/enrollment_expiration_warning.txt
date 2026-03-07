@@ -1,0 +1,21 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hey {{recipient_name}}! ⏳
+
+Just a heads-up — your access to *{{course_name}}* expires in *{{days_remaining}} days* ({{expiry_date}}).
+
+Finish your lessons.
+
+
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! ⚠️
+
+ඔබගේ *{{course_name}}* ප්‍රවේශය *{{days_remaining}} දිනකින්* ({{expiry_date}}) කල් ඉකුත් වේ.
+
+ඉක්මනින් ක්‍රියා කරන්න! පාඩම් සම්පූර්ණ කරන්න,.
+
+
+{% endblock %}

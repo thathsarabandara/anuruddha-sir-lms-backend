@@ -1,0 +1,25 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ⚠️
+
+A *late submission* was received from *{{student_name}}* for *{{assignment_name}}*.
+
+📅 *Due Date:* {{due_date}}
+🕐 *Submitted:* {{submitted_at}}
+⏱️ *Late By:* {{delay}}
+
+🔗 *Review submission:* {{submission_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! ⚠️
+
+*{{student_name}}* ගෙන් *{{assignment_name}}* ප්‍රමාද වූ ඉදිරිපත් කිරීමක් ලැබුණි.!
+
+📅 *කාලසීමාව:* {{due_date}}
+🕐 *ඉදිරිපත් කළ:* {{submitted_at}}
+⏱️ *ප්‍රමාදය:* {{delay}}
+
+🔗 *අධ්‍යයනය කරන්න:* {{submission_url}}
+{% endblock %}

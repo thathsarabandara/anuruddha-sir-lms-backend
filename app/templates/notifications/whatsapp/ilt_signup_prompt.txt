@@ -1,0 +1,27 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 🎯
+
+Don't miss out! *{{session_name}}* is open for registration.
+
+📅 *Date:* {{session_date}}
+💺 *Seats Available:* {{available_seats}}
+
+Seats are limited, so sign up before they're gone! 🏃
+
+🔗 *Register now:* {{session_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 🎯
+
+*{{session_name}}* සත්කාරය ලියාපදිංචිය සඳහා විවෘත!
+
+📅 *දිනය:* {{session_date}}
+💺 *ලබාගත හැකි ආසන:* {{available_seats}}
+
+ආසන සීමිතයි! ඉක්මනින් ලියාපදිංචි වන්න! 🏃
+
+🔗 *ලියාපදිංචිය:* {{session_url}}
+{% endblock %}

@@ -4,6 +4,7 @@ Handles automatic database and table creation on application startup.
 """
 
 import logging
+import time
 from urllib.parse import urlparse
 
 from sqlalchemy import create_engine, text
@@ -160,7 +161,7 @@ class DatabaseInitializer:
         Complete database initialization process:
         1. Create database if not exists
         2. Verify connection
-        3. Create all tables from models
+        3. Create all tables from models (safe for multiple gunicorn workers)
 
         Args:
             db: SQLAlchemy database instance
@@ -183,11 +184,11 @@ class DatabaseInitializer:
                 self.logger.error("Database connection verification failed")
                 return False
 
-            # Step 3: Create all tables
+            # Step 3: Create all tables (serialized across gunicorn workers via advisory lock)
             if app:
                 self.logger.info("Step 3: Creating database tables from models...")
                 with app.app_context():
-                    db.create_all()
+                    self._create_tables_safe(db)
                     self.logger.info("✓ Database tables created/verified")
 
             self.logger.info("✓ Database initialization completed successfully")
@@ -196,6 +197,111 @@ class DatabaseInitializer:
         except Exception as e:
             self.logger.error(f"✗ Database initialization failed: {str(e)}")
             return False
+
+    def _create_tables_safe(self, db):
+        """
+        Create all tables in a way that is safe against:
+          - MySQL FK ordering errors (SET FOREIGN_KEY_CHECKS = 0)
+          - MySQL 8.0.16+ error 3734 (FK ref to existing table missing column)
+          - Multiple gunicorn workers racing (MySQL advisory GET_LOCK)
+          - "Table already exists" errors from concurrent workers
+
+        For MySQL:
+          1. Acquire an advisory lock so only one worker runs DDL at a time.
+          2. Disable FK checks so self-referential / complex circular refs work.
+          3. Iterate db.metadata.sorted_tables (topological order) and create
+             each table individually — this guarantees parent tables like
+             'users' are always created before child tables that FK-reference
+             them, avoiding MySQL 8 error 3734 even with FOREIGN_KEY_CHECKS=0.
+          4. Release the lock when done.
+
+        Other databases fall back to the standard db.create_all().
+        """
+        dialect = db.engine.dialect.name
+
+        if dialect != "mysql":
+            db.create_all()
+            return
+
+        self.logger.info("MySQL: acquiring advisory lock for schema init...")
+
+        # Use a dedicated autocommit connection for the entire DDL session.
+        # AUTOCOMMIT means DDL statements are not wrapped in a transaction,
+        # so a failure on one table does NOT roll back previously created tables.
+        with db.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+
+            # Acquire advisory lock (wait up to 30 s). Only one worker proceeds at a time.
+            lock_result = conn.execute(text("SELECT GET_LOCK('lms_schema_init', 30)")).scalar()
+            if lock_result != 1:
+                self.logger.warning(
+                    "Could not acquire schema-init lock; another worker may be initializing. "
+                    "Waiting 5 s then continuing anyway..."
+                )
+                time.sleep(5)
+                return  # Tables should already exist by now
+
+            try:
+                self.logger.info("MySQL: advisory lock acquired. Disabling FK checks...")
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+
+                # MySQL 8.0.16+ raises error 3734 (even with FOREIGN_KEY_CHECKS=0) when
+                # a FK references an *existing* table that is missing the referenced
+                # column (e.g. a stale 'users' table without its 'user_id' PK column
+                # left over from a previous migration scheme).
+                #
+                # Strategy:
+                #   1. Iterate db.metadata.sorted_tables (topological / FK-dependency
+                #      order) so parents are always created before children.
+                #   2. For tables that already exist in the DB, verify that every
+                #      primary-key column defined in the model is actually present.
+                #      A missing PK column means the table is corrupt/stale — drop it
+                #      and recreate so FK references from child tables will succeed.
+                #   3. FOREIGN_KEY_CHECKS=0 covers self-referential and circular cases.
+                from sqlalchemy import inspect as sa_inspect
+                inspector = sa_inspect(conn)
+                existing_tables = set(inspector.get_table_names())
+
+                for table in db.metadata.sorted_tables:
+                    if table.name not in existing_tables:
+                        self.logger.debug(f"MySQL: creating table '{table.name}'...")
+                        table.create(bind=conn)
+                    else:
+                        # Check whether the existing table has the expected PK columns.
+                        # If any PK column is absent the table is stale/corrupt and
+                        # must be dropped so that child FK references do not fail with
+                        # MySQL error 3734.
+                        try:
+                            db_columns = {
+                                col["name"]
+                                for col in inspector.get_columns(table.name)
+                            }
+                            pk_columns = {col.name for col in table.primary_key.columns}
+                            missing_pk_cols = pk_columns - db_columns
+
+                            if missing_pk_cols:
+                                self.logger.warning(
+                                    f"MySQL: table '{table.name}' exists but is missing "
+                                    f"PK column(s) {missing_pk_cols}. "
+                                    "Dropping and recreating (stale/corrupt schema)..."
+                                )
+                                conn.execute(text(f"DROP TABLE IF EXISTS `{table.name}`"))
+                                table.create(bind=conn)
+                            else:
+                                self.logger.debug(
+                                    f"MySQL: table '{table.name}' already exists with "
+                                    "correct schema, skipping."
+                                )
+                        except Exception as inspect_err:
+                            self.logger.warning(
+                                f"MySQL: could not inspect table '{table.name}': "
+                                f"{inspect_err}. Skipping."
+                            )
+
+                self.logger.info("MySQL: re-enabling FK checks...")
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+
+            finally:
+                conn.execute(text("SELECT RELEASE_LOCK('lms_schema_init')"))
 
 
 def init_database(app, db):

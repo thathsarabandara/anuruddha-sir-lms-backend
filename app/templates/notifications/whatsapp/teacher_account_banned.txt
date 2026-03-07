@@ -1,0 +1,43 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+⛔ *Account Suspended*
+
+Hi {{recipient_name}},
+
+Your instructor account has been *suspended* by our admin team.
+
+*Reason:* {{ban_reason if ban_reason else 'Not specified'}}
+{% if ban_expires_at %}*Expires:* {{ban_expires_at}}{% else %}*Status:* Permanent suspension{% endif %}
+*Date:* {{banned_at}}
+
+*What this means:*
+❌ You cannot create new courses
+❌ You cannot access existing courses
+❌ Your students may have limited access
+
+If you believe this is a mistake, please contact support immediately.
+
+📞 *Support:* {{support_url}}
+{% endblock %}
+
+{% block singlish %}
+⛔ *ගිණුම අක්‍රිය කරන ලදී*
+
+ආයුබෝවන් {{recipient_name}},
+
+ඔබේ ගුරු ගිණුම අපේ පරිපාලක කණ්ඩායම විසින් *අක්‍රිය* කරන ලදී.
+
+*හේතුව:* {{ban_reason if ban_reason else 'දී නැත'}}
+{% if ban_expires_at %}*නිමා වන්න:* {{ban_expires_at}}{% else %}*තත්ත්වය:* ස්ථිර අක්‍රියතාවය{% endif %}
+*දිනය:* {{banned_at}}
+
+*මෙයින් අදහස් කරන්නේ කුමක්ද:*
+❌ ඔබට නව පාඨමාලා නිර්මාණය කළ නොහැක
+❌ ඔබට පවතින පාඨමාලා වලට ප්‍රවේශ විය නොහැක
+❌ ඔබේ සිසුන්ට සීමිත ප්‍රවේශයක් තිබිය හැක
+
+මෙය වැරදීමක් බව ඔබ විශ්වාස කරන්නේ නම්, කරුණාකර වහාම සහාය අමතන්න.
+
+📞 *සහාය:* {{support_url}}
+{% endblock %}

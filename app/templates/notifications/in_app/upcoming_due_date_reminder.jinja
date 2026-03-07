@@ -1,0 +1,17 @@
+{% set subject = "⏰ Due Soon — {{assignment_name}} in {{time_until_due}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Reminder: {{assignment_name}} is due in {{time_until_due}}.
+
+DETAILS
+-------
+Assignment      : {{assignment_name}}
+Course          : {{course_name}}
+Due Date        : {{due_date}}
+Time Remaining  : {{time_until_due}}
+
+Submit early to avoid last-minute issues.
+
+ACTION: Submit now → {{submission_url}}
+{% endblock %}

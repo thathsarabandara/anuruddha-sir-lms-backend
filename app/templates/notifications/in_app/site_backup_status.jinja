@@ -1,0 +1,15 @@
+{% set subject = "🔒 Backup {{backup_status}} — {{backup_date}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+The scheduled site backup completed with status: {{backup_status}}.
+
+DETAILS
+-------
+Date           : {{backup_date}}
+Backup Size    : {{backup_size}}
+Duration       : {{backup_duration}}
+Error (if any) : {{error_message}}
+
+ACTION: View admin panel → {{admin_url}}
+{% endblock %}

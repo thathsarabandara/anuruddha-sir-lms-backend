@@ -1,0 +1,29 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 🏆
+
+Your result for *{{quiz_name}}* is now available!
+
+📘 *Course:* {{course_name}}
+🏆 *Score:* {{score}} / {{max_score}} ({{percentage}}%)
+✅ *Result:* {{passed}}
+
+Keep it up — you're doing great! 💪
+
+🔗 *View result:* {{quiz_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 🏆
+
+*{{quiz_name}}* ප්‍රශ්නාවලිය ප්‍රතිඵල ලැබිණ! බලන්න!
+
+📘 *පාඨමාලාව:* {{course_name}}
+🏆 *ලකුණු:* {{score}} / {{max_score}} ({{percentage}}%)
+✅ *ප්‍රතිඵලය:* {{passed}}
+
+ඒක දිගටම කරගෙන යන්න — ඔයා නියමයි! 💪
+
+🔗 *ප්‍රතිඵලය බලන්න:* {{quiz_url}}
+{% endblock %}

@@ -53,9 +53,15 @@ class Config:
     # Kafka Configuration
     KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS") or "localhost:9092"
 
+    # Whatsapp Gateway Configuration
+    WHATSAPP_GATEWAY_URL = os.environ.get("WHATSAPP_GATEWAY_URL") or "http://localhost:3000/api/messages"
+
     # Application Configuration
     APP_NAME = "LMS Backend"
     APP_VERSION = "1.0.0"
+    
+    # Frontend Configuration
+    FRONTEND_URL = os.environ.get("FRONTEND_URL") or "http://localhost:5173"
 
 
 class DevelopmentConfig(Config):

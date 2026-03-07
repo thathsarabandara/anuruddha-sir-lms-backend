@@ -1,0 +1,17 @@
+{% set subject = "✅ Quiz Submitted — {{quiz_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your quiz has been submitted successfully.
+
+DETAILS
+-------
+Quiz             : {{quiz_name}}
+Course           : {{course_name}}
+Submitted At     : {{submitted_at}}
+Total Questions  : {{total_questions}}
+
+Your results will be available once grading is complete.
+
+ACTION: View submission → {{quiz_url}}
+{% endblock %}

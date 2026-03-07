@@ -1,0 +1,28 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hey {{recipient_name}}! ⏰
+
+Friendly reminder — *{{assignment_name}}* is due in *{{time_until_due}}*.
+
+📘 *Course:* {{course_name}}
+📅 *Due:* {{due_date}}
+⏳ *Time Left:* {{time_until_due}}
+
+Don't leave it to the last minute! Submit early. 🙏
+
+🔗 *Submit now:* {{submission_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! ⏰
+
+*{{assignment_name}}* කාලසීමාව ළං වෙමින් ඇත! *{{time_until_due}}* ක් ඉතිරිව ඇත!
+
+📘 *පාඨමාලාව:* {{course_name}}
+📅 *කාලසීමාව:* {{due_date}}
+
+ඉක්මනින් ඉදිරිපත් කරන්න! 🙏
+
+🔗 *ඉදිරිපත් කිරීමට:* {{submission_url}}
+{% endblock %}

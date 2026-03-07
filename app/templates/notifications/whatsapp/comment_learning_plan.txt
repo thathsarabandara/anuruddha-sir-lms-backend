@@ -1,0 +1,21 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 💬
+
+*{{commenter_name}}* commented on your learning plan *{{learning_plan_name}}*.
+
+_"{{comment_preview}}"_
+
+🔗 *View comment:* {{plan_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 💬
+
+*{{commenter_name}}* ඔබගේ *{{learning_plan_name}}* ඉගෙනීම් සැලැස්ම ගැන අදහසක් දැක්වීය!
+
+_"{{comment_preview}}"_
+
+🔗 *අදහස:* {{plan_url}}
+{% endblock %}

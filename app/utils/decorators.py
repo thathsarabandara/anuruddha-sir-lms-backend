@@ -3,11 +3,14 @@ Decorators
 Custom decorators for routes and services
 """
 
+import logging
 from functools import wraps
 
 from flask import request
 
 from app.utils.response import error_response
+
+logger = logging.getLogger(__name__)
 
 
 def validate_json(*required_fields):
@@ -28,14 +31,17 @@ def validate_json(*required_fields):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            data = request.get_json()
-
-            if not data:
-                return error_response("Request body must be JSON", 400)
-
+            # Try to get data from JSON first, then fallback to form data
+            data = request.get_json(force=True, silent=True) or {}
+            
+            # If no JSON data, try form data
+            if not data and request.form:
+                data = request.form.to_dict()
+            
             missing_fields = [field for field in required_fields if field not in data]
 
             if missing_fields:
+                logger.warning(f"Missing fields: {missing_fields}, received data keys: {list(data.keys())}, content-type: {request.content_type}")
                 return error_response(f'Missing required fields: {", ".join(missing_fields)}', 400)
 
             return func(*args, **kwargs)

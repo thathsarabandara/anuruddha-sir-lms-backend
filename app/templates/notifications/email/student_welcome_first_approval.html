@@ -1,0 +1,48 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#059669" %}
+{% set icon = "🎓" %}
+{% set category = "Welcome" %}
+{% set title = "Welcome to Our Learning Platform" %}
+{% set subject = "Welcome {{recipient_name}}! Your Journey Starts Now 🎓" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Congratulations! Your registration has been <strong style="color:#059669;">approved</strong> by our admin team. We're thrilled to have you join the Anuruddha Sir - LMS Platform community!</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Your account is now fully activated, and you can start your learning journey immediately.</p>
+
+<table cellpadding="0" cellspacing="0" style="background:#ecfdf5;border-left:4px solid #059669;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;">
+<tr><td>
+<p style="margin:0;color:#065f46;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Get Started in 3 Steps</p>
+<p style="margin:0;color:#333;font-size:14px;line-height:1.9;">
+<strong>1. Complete Your Profile</strong><br/>
+Add your photo, bio, and learning goals<br/><br/>
+<strong>2. Explore Courses</strong><br/>
+Browse and find courses that match your interests<br/><br/>
+<strong>3. Enroll & Learn</strong><br/>
+Start learning and track your progress
+</p>
+</td></tr>
+</table>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:16px 0;"><strong>What You Can Do Now:</strong></p>
+<ul style="color:#333333;font-size:15px;line-height:1.8;margin:16px 0;">
+<li>🎓 Enroll in any available course</li>
+<li>📚 Access course materials and assignments</li>
+<li>📝 Take quizzes and submit assignments</li>
+<li>💬 Interact with instructors and peers</li>
+<li>🏆 Earn certificates upon completion</li>
+<li>📊 Track your learning progress</li>
+</ul>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:16px 0;">If you have any questions or need help getting started, our support team is always here for you!</p>
+
+<p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Happy learning!<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{dashboard_url}}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Start Learning Now →</a>
+</td></tr>
+{% endblock %}

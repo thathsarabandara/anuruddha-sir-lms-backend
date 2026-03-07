@@ -1,0 +1,13 @@
+{% set subject = "📢 New Announcement — {{course_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{posted_by}} posted a new announcement in {{course_name}}.
+
+ANNOUNCEMENT
+------------
+Title    : {{announcement_title}}
+Preview  : {{announcement_preview}}
+
+ACTION: Read full announcement → {{announcement_url}}
+{% endblock %}

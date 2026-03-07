@@ -1,0 +1,27 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hey, Son {{recipient_name}}! 👋
+
+Great news — you're officially enrolled in *{{course_name}}*! 🎉
+
+📘 *Course:* {{course_name}}
+👤 *Instructor:* {{instructor_name}}
+📅 *Start Date:* {{start_date}}
+
+Head over to the platform and start your learning journey today!
+🔗 {{course_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}}! ට 🎉
+
+ඔබ *{{course_name}}* පාඨමාලාවට ලියාපදිංචි වූ බව තහවුරු කෙරිණ! 🙌
+
+📘 *පාඨමාලාව:* {{course_name}}
+👤 *ගුරුවරයා:* {{instructor_name}}
+📅 *ආරම්භ දිනය:* {{start_date}}
+
+ඉගෙනීම ආරම්භ කිරීමට ප්ලැට්ෆෝමයට ලොග් වන්න! 💪
+🔗 {{course_url}}
+{% endblock %}

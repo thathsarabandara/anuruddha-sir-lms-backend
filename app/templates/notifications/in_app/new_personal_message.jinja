@@ -1,0 +1,12 @@
+{% set subject = "✉️ New Message from {{sender_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+You have a new personal message from {{sender_name}}.
+
+MESSAGE PREVIEW
+---------------
+"{{message_preview}}"
+
+ACTION: Read message → {{message_url}}
+{% endblock %}

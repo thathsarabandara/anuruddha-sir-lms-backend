@@ -5,6 +5,7 @@ All SQLAlchemy models should be imported here for migration purposes
 
 # Import all authentication models
 from app.models.auth import (
+    User,
     EmailVerificationToken,
     LoginFailure,
     LoginHistory,
@@ -13,9 +14,19 @@ from app.models.auth import (
     Permission,
     Role,
     RolePermission,
-    User,
     UserAccountStatus,
     UserRole,
+    AccessToken,
+    RefreshToken,   
+)
+
+# Import all user-role profile models
+from app.models.users import (
+    StudentProfile,
+    TeacherProfile,
+    UserActivityLog,
+    UserPreferences,
+    UserStatistics,
 )
 
 # Import all certificates models
@@ -47,7 +58,6 @@ from app.models.notifications import (
     NotificationBatch,
     NotificationDeliveryLog,
     NotificationPreferences,
-    NotificationTemplate,
     NotificationTypePreferences,
 )
 
@@ -78,15 +88,6 @@ from app.models.rewards import (
     UserPoints,
 )
 
-# Import all user profile models
-from app.models.users import (
-    UserActivityLog,
-    UserPreferences,
-    UserProfile,
-    UserStatistics,
-    UserSuspensionLog,
-)
-
 __all__ = [
     # Auth Models (12)
     "User",
@@ -100,12 +101,14 @@ __all__ = [
     "LoginHistory",
     "PasswordResetToken",
     "EmailVerificationToken",
+    "AccessToken",
+    "RefreshToken",
     # Users Models (5)
-    "UserProfile",
+    "StudentProfile",
+    "TeacherProfile",
     "UserPreferences",
     "UserActivityLog",
     "UserStatistics",
-    "UserSuspensionLog",
     # Courses Models (11)
     "CourseCategory",
     "Course",
@@ -130,7 +133,6 @@ __all__ = [
     "NotificationPreferences",
     "NotificationTypePreferences",
     "NotificationDeliveryLog",
-    "NotificationTemplate",
     "NotificationBatch",
     # Reviews Models (4)
     "Review",
@@ -156,7 +158,3 @@ __all__ = [
     "Refund",
     "Coupon",
 ]
-
-# Import other models as they are created
-# from app.models.quiz import Quiz
-# from app.models.notifications import Notification

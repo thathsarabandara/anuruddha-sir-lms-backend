@@ -1,0 +1,33 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hey {{recipient_name}}! 👋
+
+Welcome to *Anuruddha Sir - LMS Platform*! 🎉
+
+Your account is ready. Here's what to explore:
+🎓 Browse available courses
+📚 Build your learning profile
+🏆 Earn achievements & certifications
+📅 Join upcoming live sessions
+
+Start your learning journey now! 🚀
+
+🔗 *Dashboard:* {{dashboard_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට ආයුබෝවන්! 👋
+
+*Anuruddha Sir - LMS Platform* ට ඔබව සාදරයෙන් පිළිගනිමු! 🎉
+
+ගිණුම සූදානම්! මේවා ගවේෂණය කරන්න:
+🎓 පවතින පාඨමාලා පිරික්සන්න
+📚 ඔබේ ඉගෙනුම් පැතිකඩ ගොඩනඟන්න
+🏆 ජයග්‍රහණ සහ සහතික උපයන්න
+📅 ඉදිරි සජීවී සැසිවලට සම්බන්ධ වන්න
+
+දැන් ඉගෙනීම ආරම්භ කරන්න! 🚀
+
+🔗 *ප්‍රධාන පුවරුව:* {{dashboard_url}}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% set subject = "🤝 Mentor Connection Request from {{requester_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{requester_name}} ({{requester_role}}) sent you a mentor connection request.
+
+THEIR MESSAGE
+-------------
+"{{message}}"
+
+ACTION: Respond to request → {{request_url}}
+{% endblock %}

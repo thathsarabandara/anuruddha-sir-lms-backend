@@ -1,0 +1,16 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#D97706" %}
+{% set icon = "⏰" %}
+{% set category = "Deadlines & Reminders" %}
+{% set title = "Upcoming Due Date" %}
+{% set subject = "⏰ Reminder: {{assignment_name}} is due in {{time_until_due}}" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p><p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">This is a reminder that <strong>{{assignment_name}}</strong> is due in <strong>{{time_until_due}}</strong>.</p><table cellpadding="0" cellspacing="0" style="background:#fff8e1;border-left:4px solid #D97706;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#92400e;font-size:14px;line-height:1.7;">📄 <strong>Assignment:</strong> {{assignment_name}}<br/>📘 <strong>Course:</strong> {{course_name}}<br/>📅 <strong>Due:</strong> {{due_date}}<br/>⏳ <strong>Time Remaining:</strong> {{time_until_due}}</p></td></tr></table><p style="color:#555555;font-size:14px;line-height:1.7;margin:0 0 8px;">Don't leave it to the last minute — submit early to avoid technical issues.</p><p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Warm regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{submission_url}}" style="display:inline-block;background:#D97706;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Submit Now →</a>
+</td></tr>
+{% endblock %}

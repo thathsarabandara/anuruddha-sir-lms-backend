@@ -24,6 +24,7 @@ class NotificationBatch(db.Model):
         scheduled_for: Scheduled send timestamp
         sent_at: Actual send timestamp
         status: Batch status (scheduled, sending, sent, failed)
+        channels: Notification channels used (email, whatsapp, in_app)
         created_at: Creation timestamp
     """
 
@@ -58,6 +59,9 @@ class NotificationBatch(db.Model):
         index=True,
     )
 
+    # Channels
+    channels = db.Column(db.JSON, nullable=True)
+
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
@@ -77,5 +81,6 @@ class NotificationBatch(db.Model):
             "scheduled_for": self.scheduled_for.isoformat() if self.scheduled_for else None,
             "sent_at": self.sent_at.isoformat() if self.sent_at else None,
             "status": self.status,
+            "channels": self.channels,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

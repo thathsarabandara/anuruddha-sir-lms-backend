@@ -1,0 +1,21 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 💬
+
+*{{commenter_name}}* left a comment on the submission for *{{assignment_name}}*.
+
+_"{{comment_preview}}"_
+
+🔗 *View full comment:* {{submission_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 💬
+
+*{{commenter_name}}* ඔබගේ *{{assignment_name}}* ඉදිරිපත් කිරීම ගැන අදහසක් දැක්වීය!
+
+_"{{comment_preview}}"_
+
+🔗 *අදහස බලන්න:* {{submission_url}}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% set subject = "💬 New Comment on Submission — {{assignment_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+{{commenter_name}} left a comment on the submission for {{assignment_name}}.
+
+DETAILS
+-------
+Course      : {{course_name}}
+Assignment  : {{assignment_name}}
+Comment By  : {{commenter_name}}
+Preview     : "{{comment_preview}}"
+
+ACTION: View full comment → {{submission_url}}
+{% endblock %}

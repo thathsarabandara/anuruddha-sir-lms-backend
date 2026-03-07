@@ -1,0 +1,17 @@
+{% set subject = "🏅 Badge Earned — {{badge_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Congratulations! You've earned a new badge for your outstanding performance.
+
+DETAILS
+-------
+Badge        : {{badge_name}}
+Description  : {{badge_description}}
+Earned In    : {{course_name}}
+Awarded At   : {{awarded_at}}
+
+Keep it up and collect more badges!
+
+ACTION: View all badges → {{badges_url}}
+{% endblock %}

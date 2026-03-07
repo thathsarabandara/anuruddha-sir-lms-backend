@@ -1,0 +1,21 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 💬
+
+*{{added_by}}* added you to the conversation *{{conversation_name}}*.
+
+👥 *Participants:* {{participants}}
+
+🔗 *Join conversation:* {{conversation_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 👋
+
+*{{added_by}}* ඔබව *{{conversation_name}}* කතාබහට එකතු කළේ!
+
+👥 *සහභාගිවන්නෝ:* {{participants}}
+
+🔗 *කතාබහ:* {{conversation_url}}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+⛔ *Account Suspended*
+
+Hi {{recipient_name}},
+
+Your student account has been *suspended* by our admin team.
+
+*Reason:* {{ban_reason if ban_reason else 'Not specified'}}
+{% if ban_expires_at %}*Expires:* {{ban_expires_at}}{% else %}*Status:* Permanent suspension{% endif %}
+*Date:* {{banned_at}}
+
+If you believe this is a mistake, please contact support immediately.
+
+📞 *Support:* {{support_url}}
+{% endblock %}
+
+{% block singlish %}
+⛔ *ගිණුම අක්‍රිය කරන ලදී*
+
+ආදරණීය පුතා/දියණිය {{recipient_name}},
+
+ඔබගේ ශිෂ්‍ය ගිණුම අපගේ පරිපාලක කණ්ඩායම විසින් *අත්හිටුවා ඇත*
+
+*හේතුව:* {{ban_reason if ban_reason else 'නිශ්චිත නොවේ'}}
+{% if ban_expires_at %}*ල් ඉකුත් වේ:* {{ban_expires_at}}{% else %}*තත්ත්වය:* ස්ථිර අත්හිටුවීම{% endif %}
+*දිනය:* {{banned_at}}
+
+මෙය වැරදීමක් බව ඔබ විශ්වාස කරන්නේ නම්, කරුණාකර වහාම සහාය අමතන්න.
+
+📞 *සහාය:* {{support_url}}
+{% endblock %}

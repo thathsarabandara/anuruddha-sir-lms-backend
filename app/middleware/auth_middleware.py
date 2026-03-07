@@ -9,6 +9,11 @@ from functools import wraps
 import jwt
 from flask import current_app, jsonify, request
 
+from app.models import User
+from app.models.auth.access_token import AccessToken
+from app.models.auth.user_account_status import UserAccountStatus
+from app.services.auth.token_verification_service import TokenVerificationService
+
 
 class AuthenticationError(Exception):
     """Custom authentication error"""
@@ -65,6 +70,8 @@ def require_auth(f):
         try:
             # Get token from cookies
             token = request.cookies.get("access_token")
+            refresh_token = request.cookies.get("refresh_token")
+            new_access_token = None
 
             if not token:
                 return (
@@ -78,16 +85,69 @@ def require_auth(f):
                     401,
                 )
 
-            # Verify token
+            # Verify token signature
             payload = verify_token(token)
+
+            # Check token revocation status in database
+            token_record = AccessToken.query.filter_by(token=token).first()
+            if token_record and not token_record.is_valid():
+                # Token is either revoked or expired
+                if token_record.is_revoked:
+                    raise AuthenticationError(
+                        "Access token has been revoked. Please login again."
+                    )
+                elif token_record.is_expired():
+                    # Token is expired, try to refresh if refresh token is available
+                    if refresh_token:
+                        try:
+                            token_verification_service = TokenVerificationService()
+                            verification_result = token_verification_service.verify_token(token, refresh_token)
+                            if verification_result.get("new_access_token"):
+                                # Got new access token - update payload and token for use
+                                new_access_token = verification_result["new_access_token"]
+                                payload = verify_token(new_access_token)
+                            else:
+                                raise AuthenticationError("Token refresh failed. Please login again.")
+                        except AuthenticationError:
+                            raise AuthenticationError("Token expired and refresh failed. Please login again.")
+                    else:
+                        raise AuthenticationError("Token has expired. Please login again.")
+
+            user = User.query.filter_by(user_id=payload.get("user_id")).first()
+            if not user:
+                raise AuthenticationError("User not found")
+            
+            user_status = UserAccountStatus.query.filter_by(user_id=user.user_id).first() if user else None
+            if not user_status or not user_status.is_active or user_status.is_banned:
+                raise AuthenticationError("User account is not active")
+            
 
             # Attach user info to request context
             request.user_id = payload.get("user_id")
             request.user_role = payload.get("role")
             request.user_email = payload.get("email")
             request.token_payload = payload
+            # Store new token if it was refreshed
+            request.new_access_token = new_access_token
 
-            return f(*args, **kwargs)
+            # Execute the original function
+            response = f(*args, **kwargs)
+            
+            # If response is a tuple (response, status_code), extract response object
+            if isinstance(response, tuple):
+                response_body, status_code = response if len(response) >= 2 else (response[0], 200)
+                if isinstance(response_body, dict):
+                    response = jsonify(response_body)
+                    response.status_code = status_code
+            elif not hasattr(response, 'set_cookie'):
+                # If it's a dict or plain response, convert to Flask response
+                response = jsonify(response)
+            
+            # Set new access token cookie if token was refreshed
+            if new_access_token:
+                response.set_cookie("access_token", new_access_token, httponly=True, secure=True, samesite="Strict")
+            
+            return response
 
         except AuthenticationError as e:
             return jsonify({"status": "error", "message": str(e), "code": "AUTH_ERROR"}), 401

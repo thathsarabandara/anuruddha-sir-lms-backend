@@ -1,0 +1,21 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ✉️
+
+You've got a new message from *{{sender_name}}*.
+
+_"{{message_preview}}"_
+
+🔗 *Read message:* {{message_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! ✉️
+
+*{{sender_name}}* ඔබට නව පණිවිඩයක් යැව්වා!
+
+_"{{message_preview}}"_
+
+🔗 *පණිවිඩය:* {{message_url}}
+{% endblock %}

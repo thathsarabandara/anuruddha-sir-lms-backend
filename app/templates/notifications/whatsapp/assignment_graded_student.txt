@@ -1,0 +1,25 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! ✅
+
+Your assignment *{{assignment_name}}* has been graded. Check out your result!
+
+📘 *Course:* {{course_name}}
+🏆 *Grade:* {{grade}} / {{max_grade}}
+💬 *Feedback:* {{feedback}}
+
+🔗 *View feedback:* {{submission_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 🎉
+
+ඔබගේ *{{assignment_name}}* පැවරුම ශ්‍රේණිගත කෙරිණ! ප්‍රතිඵල බලන්න!
+
+📘 *පාඨමාලාව:* {{course_name}}
+🏆 *ලකුණු:* {{grade}} / {{max_grade}}
+💬 *ප්‍රතිපෝෂණය:* {{feedback}}
+
+🔗 *බලන්න:* {{submission_url}}
+{% endblock %}

@@ -1,0 +1,16 @@
+{% set subject = "Enrollment Confirmed — {{course_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+You have been successfully enrolled in {{course_name}}.
+
+DETAILS
+-------
+Course      : {{course_name}}
+Instructor  : {{instructor_name}}
+Start Date  : {{start_date}}
+
+Head to your dashboard to begin your learning journey.
+
+ACTION: Open course → {{course_url}}
+{% endblock %}

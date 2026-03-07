@@ -1,0 +1,15 @@
+{% set subject = "⚠️ New Login Detected on Your Account" %}
+{% block body %}
+Hi {{recipient_name}},
+
+A new login was detected on your account. If this was you, no action is needed. If not, please secure your account immediately.
+
+LOGIN DETAILS
+-------------
+Time       : {{login_time}}
+IP Address : {{ip_address}}
+Location   : {{location}}
+Device     : {{device}}
+
+ACTION: Secure my account → {{secure_url}}
+{% endblock %}

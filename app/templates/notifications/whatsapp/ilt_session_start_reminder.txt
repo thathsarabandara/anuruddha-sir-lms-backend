@@ -1,0 +1,29 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hey {{recipient_name}}! ⏰
+
+Your training session *{{session_name}}* is starting in *{{time_until}}*!
+
+📅 *Date:* {{session_date}}
+🕐 *Time:* {{session_time}}
+📍 *Venue:* {{venue}}
+
+Get ready and don't be late! 🙌
+
+🔗 *Join session:* {{join_url}}
+{% endblock %}
+
+{% block singlish %}
+{{recipient_name}} ට! ⏰
+
+*{{session_name}}* පුහුණු සත්කාරය *{{time_until}}* ක් ඇතුළත ආරම්භ වේ!
+
+📅 *දිනය:* {{session_date}}
+🕐 *වේලාව:* {{session_time}}
+📍 *ස්ථානය:* {{venue}}
+
+සූදානම් වන්න! ප්‍රමාද නොවෙන්න! 🙌
+
+🔗 *සත්කාරයට:* {{join_url}}
+{% endblock %}

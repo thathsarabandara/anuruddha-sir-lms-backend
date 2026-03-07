@@ -1,0 +1,15 @@
+{% set subject = "🚀 Welcome to {{course_name}}!" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Welcome! Your learning journey in {{course_name}} begins now.
+
+DETAILS
+-------
+Course      : {{course_name}}
+Instructor  : {{instructor_name}}
+
+Tip: Set a regular study schedule and track your progress on the dashboard.
+
+ACTION: Start first lesson → {{first_lesson_url}}
+{% endblock %}

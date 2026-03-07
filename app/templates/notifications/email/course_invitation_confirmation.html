@@ -1,0 +1,16 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#4F46E5" %}
+{% set icon = "✉️" %}
+{% set category = "Course Enrollment & Access" %}
+{% set title = "Course Invitation" %}
+{% set subject = "You've been invited to join {{course_name}} on LMS Platform" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p><p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;"><strong>{{inviter_name}}</strong> has invited you to join <strong>{{course_name}}</strong>.</p><table cellpadding="0" cellspacing="0" style="background:#f0f0ff;border-left:4px solid #4F46E5;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;"><tr><td><p style="margin:0;color:#333;font-size:14px;line-height:1.7;">📘 <strong>Course:</strong> {{course_name}}<br/>👤 <strong>Invited by:</strong> {{inviter_name}}</p></td></tr></table><p style="color:#555555;font-size:14px;line-height:1.7;margin:0 0 8px;">Click the button below to accept the invitation and get started. If this was unexpected, you may safely ignore this email.</p><p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Warm regards,<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{registration_url}}" style="display:inline-block;background:#4F46E5;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Accept Invitation →</a>
+</td></tr>
+{% endblock %}

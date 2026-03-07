@@ -1,0 +1,28 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}} 😟
+
+The deadline for *{{assignment_name}}* has already passed.
+
+📘 *Course:* {{course_name}}
+📅 *Was Due:* {{due_date}}
+⏱️ *Overdue By:* {{overdue_by}}
+
+Please contact your instructor if you need an extension.
+
+🔗 *Submit anyway:* {{submission_url}}
+{% endblock %}
+
+{% block singlish %}
+ආදරණීය පුතා/දියණිය {{recipient_name}} ට! 😟
+
+*{{assignment_name}}* කාලසීමාව ඉකුත් විය! *{{overdue_by}}* ක් ප්‍රමාදයෙන් ඇත!
+
+📘 *පාඨමාලාව:* {{course_name}}
+📅 *කාලසීමාව:* {{due_date}}
+
+දිගු කිරීමක් අවශ්‍ය නම් ගුරුවරයාගෙන් ඉල්ලන්න. 🙏
+
+🔗 *අධ්‍යයනයට:* {{submission_url}}
+{% endblock %}

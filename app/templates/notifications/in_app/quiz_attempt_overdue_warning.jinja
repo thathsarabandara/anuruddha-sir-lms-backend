@@ -1,0 +1,16 @@
+{% set subject = "⚠️ Quiz Attempt Overdue — {{quiz_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+Your quiz attempt window for {{quiz_name}} has expired.
+
+DETAILS
+-------
+Quiz    : {{quiz_name}}
+Course  : {{course_name}}
+Was Due : {{due_date}}
+
+Please contact your instructor if you need assistance.
+
+ACTION: View quiz → {{quiz_url}}
+{% endblock %}

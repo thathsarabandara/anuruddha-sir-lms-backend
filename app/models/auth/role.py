@@ -38,7 +38,7 @@ class Role(db.Model):
     permissions = db.relationship(
         "RolePermission", backref="role", lazy=True, cascade="all, delete-orphan"
     )
-    users = db.relationship("UserRole", backref="role", lazy=True, cascade="all, delete-orphan")
+    user_roles = db.relationship("UserRole", backref="role", lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Role {self.role_name}>"

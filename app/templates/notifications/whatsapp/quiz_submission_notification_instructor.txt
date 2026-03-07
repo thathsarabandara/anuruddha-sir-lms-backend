@@ -1,0 +1,23 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{recipient_name}}! 📝
+
+*{{student_name}}* completed and submitted *{{quiz_name}}*. It may need manual grading.
+
+📘 *Course:* {{course_name}}
+🕐 *Submitted:* {{submitted_at}}
+
+🔗 *Grade quiz:* {{submission_url}}
+{% endblock %}
+
+{% block singlish %}
+ගුරු {{recipient_name}} ට! 📝
+
+*{{student_name}}*  ප්‍රශ්නාවලිය ඉදිරිපත් කරනා ලදී! *{{quiz_name}}* ශ්‍රේණිගත කිරීම අවශ්‍ය විය හැකිය!
+
+📘 *පාඨමාලාව:* {{course_name}}
+🕐 *ඉදිරිපත් කළ:* {{submitted_at}}
+
+🔗 *ශ්‍රේණිගත කිරීමට:* {{submission_url}}
+{% endblock %}

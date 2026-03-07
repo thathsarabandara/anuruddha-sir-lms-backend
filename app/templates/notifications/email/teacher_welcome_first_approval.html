@@ -1,0 +1,58 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#059669" %}
+{% set icon = "👨‍🏫" %}
+{% set category = "Welcome" %}
+{% set title = "Welcome to Our Teaching Platform" %}
+{% set subject = "Welcome {{recipient_name}}! Start Creating Courses 👨‍🏫" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hi <strong>{{recipient_name}}</strong>,</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Congratulations! Your instructor registration has been <strong style="color:#059669;">approved</strong> by our admin team. We're excited to have you as an instructor on the Anuruddha Sir - LMS Platform!</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Your account is now fully activated, and you can start creating and managing your courses right away.</p>
+
+<table cellpadding="0" cellspacing="0" style="background:#ecfdf5;border-left:4px solid #059669;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;">
+<tr><td>
+<p style="margin:0;color:#065f46;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Get Your Teaching Started in 3 Steps</p>
+<p style="margin:0;color:#333;font-size:14px;line-height:1.9;">
+<strong>1. Set Up Your Profile</strong><br/>
+Add your photo, bio, qualifications, and expertise<br/><br/>
+<strong>2. Create Your First Course</strong><br/>
+Define course structure and add learning materials<br/><br/>
+<strong>3. Launch & Engage</strong><br/>
+Publish your course and start instructing students
+</p>
+</td></tr>
+</table>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:16px 0;"><strong>What You Can Do Now:</strong></p>
+<ul style="color:#333333;font-size:15px;line-height:1.8;margin:16px 0;">
+<li>📚 Create and organize courses</li>
+<li>📝 Add lessons, materials, and content</li>
+<li>✏️ Create assignments and quizzes</li>
+<li>👥 Manage student enrollments</li>
+<li>📊 Track student progress</li>
+<li>💬 Communicate with students</li>
+<li>⭐ View student ratings and feedback</li>
+<li>💰 Earn from your courses (if applicable)</li>
+</ul>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:16px 0;"><strong>Resources to Help You Get Started:</strong></p>
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:16px 0;">
+✓ Instructor Guide & Best Practices<br/>
+✓ Course Creation Checklist<br/>
+✓ Content Upload Guidelines<br/>
+✓ Dedicated Instructor Support
+</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:16px 0;">If you have any questions or need assistance, our instructor support team is here to help!</p>
+
+<p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Happy teaching!<br/><strong style="color:#444;">The Anuruddha Sir - LMS Platform Team</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{dashboard_url}}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Create Your First Course →</a>
+</td></tr>
+{% endblock %}

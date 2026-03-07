@@ -1,0 +1,37 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Hi {{ recipient_name }}! 👋
+
+Great news! Your email has been verified. ✓
+
+Your account is now *under admin review*. ⏳
+
+*Account Status:* ✓ Email Verified
+⏳ Awaiting Admin Approval
+📧 You'll get a message once approved
+
+This usually takes *24–48 hours*.
+
+In the meantime, explore our platform and check out the available courses! 🎓
+
+Questions? Visit: {{ platform_url }}
+{% endblock %}
+
+{% block singlish %}
+ආයුබෝවන් {{ recipient_name }} ට! 👋
+
+හොඳ ආරංචියක්! ඔබගේ විද්‍යුත් තැපෑල සත්‍යාපනය කර ඇත. ✓
+
+ඔබගේ ගිණුම දැන් *පරිපාලක සමාලෝචනය යටතේ පවතී*. ⏳
+
+*ගිණුම තත්ත්වය:* ✓ ඉමේල් තහවුරු
+⏳ පරිපාලක අනුමැතිය බලාපොරොත්තුවෙන්
+📧 අනුමත වූ පසු ඔබට පණිවිඩයක් ලැබෙනු ඇත
+
+මෙය සාමාන්‍යයෙන් *24–48 පැය* ගතවේ.
+
+මේ අතරතුර, අපගේ වේදිකාව ගවේෂණය කර පවතින පාඨමාලා පරීක්ෂා කරන්න! 🎓
+
+ප්‍රශ්ණ ඇතිද? {{ platform_url }}
+{% endblock %}

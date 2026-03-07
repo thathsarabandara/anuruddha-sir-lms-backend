@@ -1,0 +1,15 @@
+{% set subject = "📝 Quiz Submitted by {{student_name}} — {{quiz_name}}" %}
+{% block body %}
+Hi {{recipient_name}},
+
+A student has submitted a quiz that may require manual grading.
+
+DETAILS
+-------
+Student     : {{student_name}}
+Quiz        : {{quiz_name}}
+Course      : {{course_name}}
+Submitted   : {{submitted_at}}
+
+ACTION: Grade quiz → {{submission_url}}
+{% endblock %}
