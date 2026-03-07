@@ -566,7 +566,7 @@ def auto_seed(app):
                     user = User(
                         user_id=uid,
                         username="superadmin_admin",
-                        email="superadmin@lms.com",
+                        email="stormprojects47@gmail.com",
                         password_hash=PasswordManager.hash_password("SuperAdmin@123"),
                         first_name="Super",
                         last_name="Admin",
@@ -592,7 +592,7 @@ def auto_seed(app):
                     db.session.commit()
                     app.logger.info(
                         "[auto-seed] ✓ Default superadmin created "
-                        "(superadmin@lms.com / SuperAdmin@123) — CHANGE PASSWORD!"
+                        "(stormprojects47@gmail.com / SuperAdmin@123) — CHANGE PASSWORD!"
                     )
                 else:
                     app.logger.warning(
