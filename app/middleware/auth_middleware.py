@@ -70,8 +70,6 @@ def require_auth(f):
         try:
             # Get token from cookies
             token = request.cookies.get("access_token")
-            refresh_token = request.cookies.get("refresh_token")
-            new_access_token = None
 
             if not token:
                 return (
@@ -82,7 +80,7 @@ def require_auth(f):
                             "code": "MISSING_TOKEN",
                         }
                     ),
-                    401,
+                    403,
                 )
 
             # Verify token signature
@@ -91,27 +89,8 @@ def require_auth(f):
             # Check token revocation status in database
             token_record = AccessToken.query.filter_by(token=token).first()
             if token_record and not token_record.is_valid():
-                # Token is either revoked or expired
-                if token_record.is_revoked:
-                    raise AuthenticationError(
-                        "Access token has been revoked. Please login again."
-                    )
-                elif token_record.is_expired():
-                    # Token is expired, try to refresh if refresh token is available
-                    if refresh_token:
-                        try:
-                            token_verification_service = TokenVerificationService()
-                            verification_result = token_verification_service.verify_token(token, refresh_token)
-                            if verification_result.get("new_access_token"):
-                                # Got new access token - update payload and token for use
-                                new_access_token = verification_result["new_access_token"]
-                                payload = verify_token(new_access_token)
-                            else:
-                                raise AuthenticationError("Token refresh failed. Please login again.")
-                        except AuthenticationError:
-                            raise AuthenticationError("Token expired and refresh failed. Please login again.")
-                    else:
-                        raise AuthenticationError("Token has expired. Please login again.")
+                # Token is either revoked or expired - just reject it
+                raise AuthenticationError("Access token is invalid or expired. Please login again.")
 
             user = User.query.filter_by(user_id=payload.get("user_id")).first()
             if not user:
@@ -120,43 +99,44 @@ def require_auth(f):
             user_status = UserAccountStatus.query.filter_by(user_id=user.user_id).first() if user else None
             if not user_status or not user_status.is_active or user_status.is_banned:
                 raise AuthenticationError("User account is not active")
-            
 
             # Attach user info to request context
             request.user_id = payload.get("user_id")
             request.user_role = payload.get("role")
             request.user_email = payload.get("email")
             request.token_payload = payload
-            # Store new token if it was refreshed
-            request.new_access_token = new_access_token
 
             # Execute the original function
             response = f(*args, **kwargs)
             
-            # If response is a tuple (response, status_code), extract response object
-            if isinstance(response, tuple):
-                response_body, status_code = response if len(response) >= 2 else (response[0], 200)
-                if isinstance(response_body, dict):
-                    response = jsonify(response_body)
-                    response.status_code = status_code
-            elif not hasattr(response, 'set_cookie'):
-                # If it's a dict or plain response, convert to Flask response
-                response = jsonify(response)
+            # Handle tuple responses (response_obj, status_code)
+            status_code = 200
+            response_obj = response
             
-            # Set new access token cookie if token was refreshed
-            if new_access_token:
-                response.set_cookie("access_token", new_access_token, httponly=True, secure=True, samesite="Strict")
+            if isinstance(response, tuple) and len(response) >= 2:
+                response_obj, status_code = response[0], response[1]
             
-            return response
+            # Convert dict responses to JSON response objects if needed
+            if isinstance(response_obj, dict):
+                response_obj = jsonify(response_obj)
+            
+            # Try to set status code on response
+            try:
+                response_obj.status_code = status_code
+            except (AttributeError, TypeError):
+                # If something goes wrong, just return response as-is
+                pass
+            
+            return response_obj
 
         except AuthenticationError as e:
-            return jsonify({"status": "error", "message": str(e), "code": "AUTH_ERROR"}), 401
+            return jsonify({"status": "error", "message": str(e), "code": "AUTH_ERROR"}), 403
         except Exception:
             return (
                 jsonify(
                     {"status": "error", "message": "Authentication failed", "code": "AUTH_FAILED"}
                 ),
-                401,
+                403,
             )
 
     return decorated_function
@@ -175,59 +155,46 @@ def require_role(*allowed_roles):
             ...
 
     Args:
-        *allowed_roles: One or more role names (e.g., 'admin', 'teacher', 'student')
+        *allowed_roles: One or more role names (e.g., 'admin', 'teacher', 'student', 'superadmin')
     """
 
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            try:
-                # Check if user is authenticated (should have user_id from @require_auth)
-                if not hasattr(request, "user_id"):
-                    return (
-                        jsonify(
-                            {
-                                "status": "error",
-                                "message": "Authentication required",
-                                "code": "UNAUTHENTICATED",
-                            }
-                        ),
-                        401,
-                    )
-
-                user_role = getattr(request, "user_role", None)
-
-                # Admin bypass - admins can access everything
-                if user_role == "admin":
-                    return f(*args, **kwargs)
-
-                # Check if user has required role
-                if user_role not in allowed_roles:
-                    roles_msg = f'Access denied. Required role: {", ".join(allowed_roles)}'
-                    return (
-                        jsonify(
-                            {
-                                "status": "error",
-                                "message": roles_msg,
-                                "code": "INSUFFICIENT_PERMISSIONS",
-                            }
-                        ),
-                        403,
-                    )
-
-                return f(*args, **kwargs)
-
-            except Exception:
+            # Check if user is authenticated (should have user_id from @require_auth)
+            if not hasattr(request, "user_id"):
                 return (
                     jsonify(
                         {
                             "status": "error",
-                            "message": "Authorization check failed",
-                            "code": "AUTH_CHECK_FAILED",
+                            "message": "Authentication required",
+                            "code": "UNAUTHENTICATED",
+                        }
+                    ),
+                    401,
+                )
+
+            user_role = getattr(request, "user_role", None)
+
+            # Admin bypass - admins can access everything
+            if user_role == "superadmin":
+                return f(*args, **kwargs)
+
+            # Check if user has required role
+            if user_role not in allowed_roles:
+                roles_msg = f'Access denied. Required role: {", ".join(allowed_roles)}'
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": roles_msg,
+                            "code": "INSUFFICIENT_PERMISSIONS",
                         }
                     ),
                     403,
                 )
+
+            return f(*args, **kwargs)
 
         return decorated_function
 
@@ -268,8 +235,8 @@ def require_owner(*resource_id_param):
                 user_id = request.user_id
                 user_role = getattr(request, "user_role", None)
 
-                # Admin bypass
-                if user_role == "admin":
+                # Superadmin bypass
+                if user_role == "superadmin":
                     return f(*args, **kwargs)
 
                 # Check ownership
