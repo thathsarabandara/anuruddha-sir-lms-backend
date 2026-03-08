@@ -12,10 +12,11 @@ Endpoint map:
     DELETE /api/v1/quiz/delete/<quiz_id>                         - Delete quiz
 
   Question Management
-    POST   /api/v1/quiz/questions/<quiz_id>               - Create question
-    GET    /api/v1/quiz/questions/<quiz_id>               - Get quiz questions
-    PUT    /api/v1/quiz/update/questions/<question_id>    - Update question
-    DELETE /api/v1/quiz/delete/questions/<question_id>    - Delete question
+    POST   /api/v1/quiz/questions                         - Create question (single or batch)
+    GET    /api/v1/quiz/questions                         - Get quiz questions
+    PUT    /api/v1/quiz/update/questions                  - Update question
+    PUT    /api/v1/quiz/questions/order                   - Update question order (single or batch)
+    DELETE /api/v1/quiz/delete/questions                  - Delete question
 
   Quiz Attempt Endpoints
     POST   /api/v1/quiz/attempts                          - Start quiz attempt
@@ -400,9 +401,7 @@ def get_quiz_questions():
         if not quiz_id:
             return error_response("quiz_id is required", 400)
         
-        # Instructors/admins can always see questions
         if request.user_role == "student":
-            # Students must have started an attempt to see questions
             from app.models.quizzes.quiz_attempt import QuizAttempt
             attempt = QuizAttempt.query.filter_by(
                 quiz_id=quiz_id,
@@ -411,11 +410,10 @@ def get_quiz_questions():
             
             if not attempt:
                 return error_response("You must start a quiz attempt before viewing questions", 403)
-        
-        # Only instructors/admins may see correct answers
+
         include_answers = False
         if request.user_role in ("teacher", "admin", "superadmin"):
-            include_answers = request.args.get("include_answers", "false").lower() == "true"
+            include_answers = True
 
         questions = QuestionService.get_quiz_questions(quiz_id, include_answers=include_answers)
         return success_response(data=questions, message="Questions retrieved successfully")
@@ -424,10 +422,11 @@ def get_quiz_questions():
         return _handle_lms_error(e)
 
 
-@bp.route("/update/questions/<question_id>", methods=["PUT"])
+@bp.route("/update/questions", methods=["PUT"])
 @handle_exceptions
 @require_auth
-def update_question(question_id):
+@require_role("teacher", "admin", "superadmin")
+def update_question():
     """
     Update a question and optionally replace its options.
     Only the course instructor or admin may update.
@@ -449,6 +448,8 @@ def update_question(question_id):
         else:
             data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
 
+        question_id = request.args.get("question_id") or question_id
+
         question = QuestionService.update_question(
             question_id=question_id,
             user_id=request.user_id,
@@ -461,10 +462,10 @@ def update_question(question_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/delete/questions/<question_id>", methods=["DELETE"])
+@bp.route("/delete/questions", methods=["DELETE"])
 @handle_exceptions
 @require_auth
-def delete_question(question_id):
+def delete_question():
     """
     Delete a question (cascades to its options and attempt answers).
     Only the course instructor or admin may delete.
@@ -478,6 +479,7 @@ def delete_question(question_id):
         404: Question not found
     """
     try:
+        question_id = request.args.get("question_id")
         QuestionService.delete_question(
             question_id=question_id,
             user_id=request.user_id,
@@ -489,10 +491,104 @@ def delete_question(question_id):
         return _handle_lms_error(e)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Quiz Attempt Endpoints (endpoints 9-12)
-# ══════════════════════════════════════════════════════════════════════════════
+@bp.route("/questions/order", methods=["PUT"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin", "superadmin")
+def update_question_order():
+    """
+    Update the display order of one or multiple questions within a quiz.
+    Only the course instructor or admin may update.
 
+    Request Body (Single):
+        {
+            "question_id": "question_uuid",
+            "question_order": 3
+        }
+
+    Request Body (Batch):
+        [
+            {"question_id": "question_uuid_1", "question_order": 1},
+            {"question_id": "question_uuid_2", "question_order": 2},
+            {"question_id": "question_uuid_3", "question_order": 3}
+        ]
+
+    Returns:
+        200: Updated question(s) with new order
+        400: Invalid or missing question_order / question_id
+        403: Not authorized
+        404: Question not found
+    """
+    try:
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
+        # Handle batch request (array of questions)
+        if isinstance(data, list):
+            updated_questions = []
+            for q_data in data:
+                question_id = q_data.get("question_id")
+                question_order = q_data.get("question_order")
+
+                if not question_id:
+                    return error_response("question_id is required for all questions", 400)
+                if question_order is None:
+                    return error_response("question_order is required for all questions", 400)
+
+                try:
+                    question_order = int(question_order)
+                except (ValueError, TypeError):
+                    return error_response("question_order must be an integer", 400)
+
+                if question_order < 0:
+                    return error_response("question_order must be a positive integer", 400)
+
+                question = QuestionService.update_question_order(
+                    question_id=question_id,
+                    user_id=request.user_id,
+                    user_role=request.user_role,
+                    question_order=question_order,
+                )
+                updated_questions.append(question)
+
+            return success_response(
+                data=updated_questions,
+                message=f"Successfully updated order for {len(updated_questions)} questions"
+            )
+        else:
+            # Single question request
+            question_id = data.get("question_id")
+            question_order = data.get("question_order")
+
+            if not question_id:
+                return error_response("question_id is required", 400)
+            if question_order is None:
+                return error_response("question_order is required", 400)
+
+            try:
+                question_order = int(question_order)
+            except (ValueError, TypeError):
+                return error_response("question_order must be an integer", 400)
+
+            if question_order < 0:
+                return error_response("question_order must be a positive integer", 400)
+
+            question = QuestionService.update_question(
+                question_id=question_id,
+                user_id=request.user_id,
+                user_role=request.user_role,
+                question_order=question_order,
+            )
+            return success_response(data=question, message="Question order updated successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+# ==========================================================================
+# Quiz Attempt Endpoints (endpoints 9-12)
+# ===========================================================================
 
 @bp.route("/attempts", methods=["POST"])
 @handle_exceptions
