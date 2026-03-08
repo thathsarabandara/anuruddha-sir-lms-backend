@@ -190,6 +190,44 @@ class QuizAttemptService(BaseService):
         )
         return [a.to_dict() for a in attempts]
 
+    @staticmethod
+    def get_all_student_attempts(user_id: str) -> list:
+        """
+        Retrieve all submitted/graded quiz attempts for a student across all quizzes.
+
+        Args:
+            user_id: Student's user ID
+
+        Returns:
+            list: List of attempt dicts grouped and sorted by quiz
+        """
+        from app.models.quizzes.quiz import Quiz
+
+        attempts = (
+            QuizAttempt.query.filter(
+                QuizAttempt.user_id == user_id,
+                QuizAttempt.status.in_(["submitted", "graded"]),
+            )
+            .order_by(QuizAttempt.submitted_at.desc())
+            .all()
+        )
+
+        # Group attempts by quiz
+        grouped = {}
+        for attempt in attempts:
+            quiz = Quiz.query.get(attempt.quiz_id)
+            if quiz:
+                quiz_key = attempt.quiz_id
+                if quiz_key not in grouped:
+                    grouped[quiz_key] = {
+                        "quiz_id": attempt.quiz_id,
+                        "quiz_title": quiz.title,
+                        "attempts": [],
+                    }
+                grouped[quiz_key]["attempts"].append(attempt.to_dict())
+
+        return list(grouped.values())
+
     # ──────────────────────────────────────────────────────────────────────────
     # Internal helpers
     # ──────────────────────────────────────────────────────────────────────────
