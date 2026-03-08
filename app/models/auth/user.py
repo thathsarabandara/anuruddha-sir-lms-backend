@@ -90,6 +90,9 @@ class User(db.Model):
     email_verification_tokens = db.relationship(
         "EmailVerificationToken", backref="user", lazy=True, cascade="all, delete-orphan"
     )
+    quiz = db.relationship(
+        "Quiz", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User {self.username} ({self.email})>"
