@@ -4,41 +4,39 @@ All quiz-related API endpoints organized by resource type.
 
 Endpoint map:
   Quiz Management (CRUD)
-    POST   /api/v1/courses/<course_id>/quizzes               - Create quiz
-    GET    /api/v1/courses/<course_id>/quizzes               - List quizzes for course
-    GET    /api/v1/quizzes/<quiz_id>                         - Get quiz details
-    PUT    /api/v1/quizzes/<quiz_id>                         - Update quiz
-    DELETE /api/v1/quizzes/<quiz_id>                         - Delete quiz
+    POST   /api/v1/quiz                                   - Create quiz
+    GET    /api/v1/quiz                                   - List quizzes
+    GET    /api/v1/quiz/<course_id>                       - List quizzes for courses
+    GET    /api/v1/quiz/detail/<quiz_id>                         - Get quiz details
+    PUT    /api/v1/quiz/update/<quiz_id>                         - Update quiz
+    DELETE /api/v1/quiz/delete/<quiz_id>                         - Delete quiz
 
   Question Management
-    POST   /api/v1/quizzes/<quiz_id>/questions               - Create question
-    GET    /api/v1/quizzes/<quiz_id>/questions               - Get quiz questions
-    PUT    /api/v1/questions/<question_id>                   - Update question
-    DELETE /api/v1/questions/<question_id>                   - Delete question
+    POST   /api/v1/quiz/questions/<quiz_id>               - Create question
+    GET    /api/v1/quiz/questions/<quiz_id>               - Get quiz questions
+    PUT    /api/v1/quiz/update/questions/<question_id>    - Update question
+    DELETE /api/v1/quiz/delete/questions/<question_id>    - Delete question
 
   Quiz Attempt Endpoints
-    POST   /api/v1/quizzes/<quiz_id>/attempts               - Start quiz attempt
-    POST   /api/v1/attempts/<attempt_id>/answers            - Save/update answer
-    POST   /api/v1/attempts/<attempt_id>/submit             - Submit quiz
-    GET    /api/v1/quizzes/<quiz_id>/results                - Get quiz results (student)
+    POST   /api/v1/quiz/attempts                          - Start quiz attempt
+    POST   /api/v1/quiz/submit/answers/<attempt_id>       - Save/update answer
+    POST   /api/v1/quiz/attempts/<attempt_id>/submit      - Submit quiz
+    GET    /api/v1/quiz/results                           - Get all answered quizzes (student)
+    GET    /api/v1/quiz/<quiz_id>/results                 - Get quiz results (student)
 
   Grading Endpoints
-    POST   /api/v1/answers/<answer_id>/grade                - Grade essay answer
-    GET    /api/v1/quizzes/<quiz_id>/submissions/<user_id>  - Get submission for grading
+    POST   /api/v1/quiz/answers/<answer_id>/grade         - Grade essay answer
+    GET    /api/v1/quiz/<quiz_id>/submissions/<user_id>   - Get submission for grading
 
   Analytics Endpoints
-    GET    /api/v1/quizzes/<quiz_id>/statistics             - Quiz statistics (instructor)
-    GET    /api/v1/questions/<question_id>/analytics        - Question analytics
+    GET    /api/v1/quiz/<quiz_id>/statistics              - Quiz statistics (instructor)
+    GET    /api/v1/quiz/questions/<question_id>/analytics - Question analytics
 """
+
+from venv import logger
 
 from flask import Blueprint, request
 
-from app.exceptions import (
-    AuthorizationError,
-    ConflictError,
-    ResourceNotFoundError,
-    ValidationError,
-)
 from app.middleware.auth_middleware import require_auth, require_role
 from app.services.quizzes import (
     QuizAnalyticsService,
@@ -51,7 +49,7 @@ from app.services.quizzes import QuestionService
 from app.utils.decorators import handle_exceptions
 from app.utils.response import error_response, success_response
 
-bp = Blueprint("quizzes", __name__, url_prefix="/api/v1")
+bp = Blueprint("quizzes", __name__, url_prefix="/api/v1/quiz")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -72,17 +70,14 @@ def _handle_lms_error(e: Exception):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@bp.route("/courses/<course_id>/quizzes", methods=["POST"])
+@bp.route("/", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("teacher", "admin")
-def create_quiz(course_id):
+@require_role("teacher", "admin", "superadmin")
+def create_quiz():
     """
-    Create a new quiz for a course.
-    Requires: Teacher or Admin role. Requesting user must be the course instructor.
-
-    URL Params:
-        course_id (str): UUID of the target course
+    Create a new quiz.
+    Requires: Teacher or Admin role.
 
     Request Body:
         title (required), description, passing_score, duration_minutes,
@@ -90,17 +85,19 @@ def create_quiz(course_id):
         available_from, available_until
 
     Returns:
-        201: Created quiz data (quiz_id, course_id, title, created_at)
+        201: Created quiz data (quiz_id, title, created_at)
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
 
         if not data.get("title"):
             return error_response("title is required", 400)
 
         quiz = QuizService.create_quiz(
-            course_id=course_id,
-            instructor_id=request.user_id,
+            user_id=request.user_id,
             title=data["title"],
             description=data.get("description"),
             passing_score=data.get("passing_score", 70),
@@ -118,9 +115,32 @@ def create_quiz(course_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/courses/<course_id>/quizzes", methods=["GET"])
+@bp.route("/", methods=["GET"])
 @handle_exceptions
 @require_auth
+@require_role("teacher", "admin", "superadmin")
+def list_all_quizzes():
+    """
+    List all quizzes in the system.
+    Requires: Authenticated user (typically for admin/instructor overview).
+
+    Returns:
+        200: List of all quiz data
+    """
+    try:
+        quizzes = QuizService.get_all_quizzes(
+            user_id=request.user_id
+        )
+        return success_response(data=quizzes, message="Quizzes retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin", "superadmin")
 def list_quizzes(course_id):
     """
     List all quizzes for a course.
@@ -133,14 +153,22 @@ def list_quizzes(course_id):
         200: List of quiz data
     """
     try:
-        quizzes = QuizService.get_quizzes_for_course(course_id)
+        course_id = request.args.get("course_id") or course_id
+        quizzes = QuizService.get_quizzes_for_course(
+            course_id,
+            user_id=request.user_id,
+        )
         return success_response(data=quizzes, message="Quizzes retrieved successfully")
 
     except Exception as e:
+        response = {
+            "status": "error",
+            "message": "Failed to retrieve quizzes",
+        }
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>", methods=["GET"])
+@bp.route("/details", methods=["GET"])
 @handle_exceptions
 @require_auth
 def get_quiz(quiz_id):
@@ -156,14 +184,17 @@ def get_quiz(quiz_id):
         404: Quiz not found
     """
     try:
-        quiz = QuizService.get_quiz(quiz_id)
+        quiz_id = request.args.get("quiz_id") or quiz_id
+        quiz = QuizService.get_quiz(
+            quiz_id=quiz_id,
+        )
         return success_response(data=quiz, message="Quiz retrieved successfully")
 
     except Exception as e:
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>", methods=["PUT"])
+@bp.route("/update/<quiz_id>", methods=["PUT"])
 @handle_exceptions
 @require_auth
 def update_quiz(quiz_id):
@@ -195,7 +226,7 @@ def update_quiz(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>", methods=["DELETE"])
+@bp.route("/delete/<quiz_id>", methods=["DELETE"])
 @handle_exceptions
 @require_auth
 def delete_quiz(quiz_id):
@@ -228,7 +259,7 @@ def delete_quiz(quiz_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@bp.route("/quizzes/<quiz_id>/questions", methods=["POST"])
+@bp.route("/questions/<quiz_id>", methods=["POST"])
 @handle_exceptions
 @require_auth
 def create_question(quiz_id):
@@ -284,7 +315,7 @@ def create_question(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>/questions", methods=["GET"])
+@bp.route("/questions/<quiz_id>", methods=["GET"])
 @handle_exceptions
 @require_auth
 def get_quiz_questions(quiz_id):
@@ -315,7 +346,7 @@ def get_quiz_questions(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/questions/<question_id>", methods=["PUT"])
+@bp.route("/update/questions/<question_id>", methods=["PUT"])
 @handle_exceptions
 @require_auth
 def update_question(question_id):
@@ -348,7 +379,7 @@ def update_question(question_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/questions/<question_id>", methods=["DELETE"])
+@bp.route("/delete/questions/<question_id>", methods=["DELETE"])
 @handle_exceptions
 @require_auth
 def delete_question(question_id):
@@ -381,16 +412,16 @@ def delete_question(question_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@bp.route("/quizzes/<quiz_id>/attempts", methods=["POST"])
+@bp.route("/attempts", methods=["POST"])
 @handle_exceptions
 @require_auth
-def start_quiz_attempt(quiz_id):
+def start_quiz_attempt():
     """
     Start a new quiz attempt for the authenticated student.
     Validates enrollment, availability window, and attempt limits.
 
-    URL Params:
-        quiz_id (str): Quiz UUID
+    Request Body:
+        quiz_id (required, str): Quiz UUID
 
     Returns:
         201: Attempt data with shuffled question list and optional expires_at
@@ -399,9 +430,14 @@ def start_quiz_attempt(quiz_id):
         422: Quiz not yet available or expired
     """
     try:
+        data = request.get_json() or {}
+
+        if not data.get("quiz_id"):
+            return error_response("quiz_id is required", 400)
+
         ip_address = request.remote_addr
         attempt = QuizAttemptService.start_attempt(
-            quiz_id=quiz_id,
+            quiz_id=data["quiz_id"],
             user_id=request.user_id,
             user_role=request.user_role,
             ip_address=ip_address,
@@ -412,7 +448,7 @@ def start_quiz_attempt(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/attempts/<attempt_id>/answers", methods=["POST"])
+@bp.route("/submit/answers/<attempt_id>", methods=["POST"])
 @handle_exceptions
 @require_auth
 def save_answer(attempt_id):
@@ -482,7 +518,26 @@ def submit_quiz(attempt_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>/results", methods=["GET"])
+@bp.route("/results", methods=["GET"])
+@handle_exceptions
+@require_auth
+def get_all_student_results():
+    """
+    Get all completed/graded quiz attempts for the authenticated student across all quizzes.
+
+    Returns:
+        200: List of attempt summaries organized by quiz
+             [{ quiz_id, quiz_title, attempts: [...] }, ...]
+    """
+    try:
+        attempts = QuizAttemptService.get_all_student_attempts(user_id=request.user_id)
+        return success_response(data={"attempts": attempts}, message="All quiz results retrieved")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/<quiz_id>/results", methods=["GET"])
 @handle_exceptions
 @require_auth
 def get_quiz_results(quiz_id):
@@ -553,7 +608,7 @@ def grade_answer(answer_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>/submissions/<user_id>", methods=["GET"])
+@bp.route("/<quiz_id>/submissions/<user_id>", methods=["GET"])
 @handle_exceptions
 @require_auth
 @require_role("teacher", "admin")
@@ -588,7 +643,7 @@ def get_submission_for_grading(quiz_id, user_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@bp.route("/quizzes/<quiz_id>/statistics", methods=["GET"])
+@bp.route("/<quiz_id>/statistics", methods=["GET"])
 @handle_exceptions
 @require_auth
 @require_role("teacher", "admin")
