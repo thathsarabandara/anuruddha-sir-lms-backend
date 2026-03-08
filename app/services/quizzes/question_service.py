@@ -337,9 +337,7 @@ class QuestionService(BaseService):
         if not quiz:
             raise ResourceNotFoundError("Quiz not found")
 
-        if user_role != "admin":
-            course = Course.query.get(quiz.course_id)
-            if not course or course.instructor_id != user_id:
-                raise AuthorizationError("Only the course instructor can manage questions")
+        if user_role != "superadmin" and quiz.user_id != user_id:
+            raise AuthorizationError("Only the course instructor can manage questions")
 
         return quiz
