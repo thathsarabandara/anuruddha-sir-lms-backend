@@ -171,12 +171,12 @@ def list_quizzes(course_id):
 @bp.route("/details", methods=["GET"])
 @handle_exceptions
 @require_auth
-def get_quiz(quiz_id):
+def get_quiz_details():
     """
     Get detailed information for a specific quiz.
     Requires: Authenticated user (enrolled students or instructor).
 
-    URL Params:
+    Query Params:
         quiz_id (str): Quiz UUID
 
     Returns:
@@ -184,7 +184,10 @@ def get_quiz(quiz_id):
         404: Quiz not found
     """
     try:
-        quiz_id = request.args.get("quiz_id") or quiz_id
+        quiz_id = request.args.get("quiz_id")
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        
         quiz = QuizService.get_quiz(
             quiz_id=quiz_id,
         )
@@ -194,10 +197,11 @@ def get_quiz(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/update/<quiz_id>", methods=["PUT"])
+@bp.route("/update", methods=["PUT"])
 @handle_exceptions
 @require_auth
-def update_quiz(quiz_id):
+@require_role("teacher", "admin", "superadmin")
+def update_quiz():
     """
     Update quiz fields. Only the course instructor or admin may update.
 
@@ -213,7 +217,12 @@ def update_quiz(quiz_id):
         404: Quiz not found
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
+        quiz_id = request.args.get("quiz_id") or quiz_id
         quiz = QuizService.update_quiz(
             quiz_id=quiz_id,
             user_id=request.user_id,
@@ -226,10 +235,10 @@ def update_quiz(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/delete/<quiz_id>", methods=["DELETE"])
+@bp.route("/delete", methods=["DELETE"])
 @handle_exceptions
 @require_auth
-def delete_quiz(quiz_id):
+def delete_quiz():
     """
     Delete a quiz (cascades to questions, attempts, answers).
     Only the course instructor or admin may delete.
@@ -243,6 +252,8 @@ def delete_quiz(quiz_id):
         404: Quiz not found
     """
     try:
+        quiz_id = request.args.get("quiz_id")
+
         QuizService.delete_quiz(
             quiz_id=quiz_id,
             user_id=request.user_id,
@@ -289,7 +300,11 @@ def create_question(quiz_id):
         404: Quiz not found
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
 
         if not data.get("question_type"):
             return error_response("question_type is required", 400)
@@ -366,7 +381,11 @@ def update_question(question_id):
         404: Question not found
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
         question = QuestionService.update_question(
             question_id=question_id,
             user_id=request.user_id,
