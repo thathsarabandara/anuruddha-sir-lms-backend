@@ -13,6 +13,7 @@ from app.exceptions import AuthorizationError, ResourceNotFoundError, Validation
 from app.models.courses.course import Course
 from app.models.courses.lesson_content import LessonContent
 from app.models.quizzes.quiz import Quiz
+from app.models.quizzes.quiz_course import QuizCourse
 from app.services.base_service import BaseService
 
 logger = logging.getLogger(__name__)
@@ -102,9 +103,10 @@ class QuizService(BaseService):
         shuffle_answers: bool = False,
         available_from: str = None,
         available_until: str = None,
+        course_ids: list = None,
     ) -> dict:
         """
-        Create a new quiz.
+        Create a new quiz optionally assigned to one or more courses.
 
         Args:
             user_id: Requesting user's ID (from auth middleware)
@@ -118,9 +120,10 @@ class QuizService(BaseService):
             shuffle_answers: Randomize answer options per attempt
             available_from: ISO timestamp for quiz start availability
             available_until: ISO timestamp for quiz end availability
+            course_ids: List of course UUIDs to assign quiz to (optional, can be empty or None)
 
         Returns:
-            dict: Created quiz data
+            dict: Created quiz data with assigned courses
 
         Raises:
             ValidationError: On invalid field values
@@ -183,13 +186,32 @@ class QuizService(BaseService):
             )
 
             db.session.add(quiz)
+
+            db.session.flush()  
+
+            # Assign to courses if provided
+            if course_ids:
+                if isinstance(course_ids, str):
+                    course_ids = [course_ids]
+                
+                for course_id in course_ids:
+                    course = Course.query.filter_by(course_id=course_id).first()
+                    quiz_course = QuizCourse.query.filter_by(quiz_id=quiz.quiz_id, course_id=course_id).first()
+                    if not course:
+                        raise ValidationError(f"Course with ID {course_id} not found")
+                    if not quiz_course:
+                        quiz_course = QuizCourse(quiz_id=quiz.quiz_id, course_id=course_id)
+                        db.session.add(quiz_course)
+
             db.session.commit()
 
-            logger.info("Quiz %s created for course %s by user %s", quiz.quiz_id, quiz.user_id)
+            logger.info("Quiz %s created by user %s with %s courses", 
+                       quiz.quiz_id, user_id, len(course_ids) if course_ids else 0)
 
             return {
                 "quiz_id": quiz.quiz_id,
                 "title": quiz.title,
+                "course_ids": [qc.course_id for qc in quiz.quiz_courses],
                 "created_at": quiz.created_at.isoformat() if quiz.created_at else None,
             }
 
@@ -371,6 +393,134 @@ class QuizService(BaseService):
         except Exception as exc:
             db.session.rollback()
             logger.error("Error deleting quiz %s: %s", quiz_id, str(exc), exc_info=True)
+            raise
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Course Assignment Management
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def assign_courses_to_quiz(
+        quiz_id: str, course_ids: list, user_id: str, user_role: str
+    ) -> dict:
+        """
+        Assign one or more courses to a quiz.
+
+        Args:
+            quiz_id: Quiz UUID
+            course_ids: List of course UUIDs to assign
+            user_id: Requesting user's ID
+            user_role: Requesting user's role
+
+        Returns:
+            dict: Quiz data with assigned courses
+
+        Raises:
+            ResourceNotFoundError: If quiz or course not found
+            AuthorizationError: If user not authorized
+            ValidationError: If validation fails
+        """
+        try:
+            quiz = Quiz.query.filter_by(quiz_id=quiz_id).first()
+            if not quiz:
+                raise ResourceNotFoundError(f"Quiz with ID {quiz_id} not found")
+
+            if quiz.user_id != user_id and user_role != "superadmin":
+                raise AuthorizationError("Access denied. You do not own this quiz")
+
+            if not course_ids:
+                raise ValidationError("At least one course_id is required")
+
+            if isinstance(course_ids, str):
+                course_ids = [course_ids]
+
+            for course_id in course_ids:
+                course = Course.query.filter_by(course_id=course_id).first()
+                quiz_course = QuizCourse.query.filter_by(quiz_id=quiz_id, course_id=course_id).first()
+                
+                if not course:
+                    raise ValidationError(f"Course with ID {course_id} not found")
+
+                # Check if already assigned
+                if course not in quiz_course:
+                    QuizCourse(quiz_id=quiz_id, course_id=course_id)    
+
+            db.session.commit()
+            logger.info("Quiz %s assigned to %d courses by user %s", 
+                       quiz_id, len(course_ids), user_id)
+
+            return {
+                "quiz_id": quiz.quiz_id,
+                "title": quiz.title,
+                "course_ids": [c.course_id for c in quiz.courses],
+            }
+
+        except (ResourceNotFoundError, AuthorizationError, ValidationError):
+            db.session.rollback()
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            logger.error("Error assigning courses to quiz %s: %s", 
+                        quiz_id, str(exc), exc_info=True)
+            raise
+
+    @staticmethod
+    def remove_courses_from_quiz(
+        quiz_id: str, course_ids: list, user_id: str, user_role: str
+    ) -> dict:
+        """
+        Remove one or more courses from a quiz.
+
+        Args:
+            quiz_id: Quiz UUID
+            course_ids: List of course UUIDs to remove
+            user_id: Requesting user's ID
+            user_role: Requesting user's role
+
+        Returns:
+            dict: Quiz data with remaining assigned courses
+
+        Raises:
+            ResourceNotFoundError: If quiz not found
+            AuthorizationError: If user not authorized
+            ValidationError: If validation fails
+        """
+        try:
+            quiz = Quiz.query.filter_by(quiz_id=quiz_id).first()
+            if not quiz:
+                raise ResourceNotFoundError(f"Quiz with ID {quiz_id} not found")
+
+            if quiz.user_id != user_id and user_role != "superadmin":
+                raise AuthorizationError("Access denied. You do not own this quiz")
+
+            if not course_ids:
+                raise ValidationError("At least one course_id is required")
+
+            if isinstance(course_ids, str):
+                course_ids = [course_ids]
+
+            for course_id in course_ids:
+                course = Course.query.filter_by(course_id=course_id).first()
+                if course and course in quiz.courses:
+                    quiz.courses.remove(course)
+
+            db.session.commit()
+            logger.info("Removed %d courses from quiz %s by user %s", 
+                       len(course_ids), quiz_id, user_id)
+
+            return {
+                "quiz_id": quiz.quiz_id,
+                "title": quiz.title,
+                "course_ids": [c.course_id for c in quiz.courses],
+            }
+
+        except (ResourceNotFoundError, AuthorizationError, ValidationError):
+            db.session.rollback()
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            logger.error("Error removing courses from quiz %s: %s", 
+                        quiz_id, str(exc), exc_info=True)
             raise
 
     # ──────────────────────────────────────────────────────────────────────────
