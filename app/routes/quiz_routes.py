@@ -270,31 +270,39 @@ def delete_quiz():
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@bp.route("/questions/<quiz_id>", methods=["POST"])
+@bp.route("/questions", methods=["POST"])
 @handle_exceptions
 @require_auth
-def create_question(quiz_id):
+def create_question():
     """
-    Create a new question (with options) for a quiz.
+    Create one or multiple questions (with options) for a quiz.
     Only the course instructor or admin may create questions.
 
-    URL Params:
-        quiz_id (str): Quiz UUID
+    Query/Body Params:
+        quiz_id (str): Quiz UUID (can be in query or body)
 
     Request Body:
-        question_type (required): multiple_choice | multiple_answer | short_answer |
-                                   essay | matching | fill_blank
-        question_text (required): Question content
-        points: Points for correct answer (default 1)
-        difficulty: easy | medium | hard
-        category: Optional category label
-        explanation: Optional explanation shown after submission
-        question_order: Optional display ordering
-        options: List of {option_text, is_correct, option_order} — required for
-                 multiple_choice, multiple_answer, matching
+        Single question format:
+            {
+                "question_type": "multiple_choice|multiple_answer|short_answer|essay|matching|fill_blank",
+                "question_text": "Question content",
+                "points": 1 (optional, default 1),
+                "difficulty": "easy|medium|hard" (optional, default medium),
+                "category": "string" (optional),
+                "explanation": "string" (optional),
+                "question_order": int (optional),
+                "options": [{option_text, is_correct, option_order}] (optional)
+            }
+        
+        Batch format (array):
+            [
+                { question object 1 },
+                { question object 2 },
+                ...
+            ]
 
     Returns:
-        201: Created question data with options
+        201: Created question data (single or array)
         400: Validation error
         403: Not authorized
         404: Quiz not found
@@ -305,53 +313,108 @@ def create_question(quiz_id):
         else:
             data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
 
+        quiz_id = request.args.get("quiz_id") or data.get("quiz_id")
 
-        if not data.get("question_type"):
-            return error_response("question_type is required", 400)
-        if not data.get("question_text"):
-            return error_response("question_text is required", 400)
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
 
-        question = QuestionService.create_question(
-            quiz_id=quiz_id,
-            user_id=request.user_id,
-            user_role=request.user_role,
-            question_type=data["question_type"],
-            question_text=data["question_text"],
-            points=data.get("points", 1),
-            difficulty=data.get("difficulty", "medium"),
-            category=data.get("category"),
-            explanation=data.get("explanation"),
-            question_order=data.get("question_order"),
-            options=data.get("options"),
-        )
-        return success_response(data=question, message="Question created successfully", status_code=201)
+        # Check if it's a batch request (array of questions)
+        if isinstance(data, list):
+            questions = []
+            for q_data in data:
+                if not q_data.get("question_type"):
+                    return error_response("question_type is required for all questions", 400)
+                if not q_data.get("question_text"):
+                    return error_response("question_text is required for all questions", 400)
+
+                question = QuestionService.create_question(
+                    quiz_id=quiz_id,
+                    user_id=request.user_id,
+                    user_role=request.user_role,
+                    question_type=q_data["question_type"],
+                    question_text=q_data["question_text"],
+                    points=q_data.get("points", 1),
+                    difficulty=q_data.get("difficulty", "medium"),
+                    category=q_data.get("category"),
+                    explanation=q_data.get("explanation"),
+                    question_order=q_data.get("question_order"),
+                    options=q_data.get("options"),
+                )
+                questions.append(question)
+            
+            return success_response(
+                data=questions,
+                message=f"Successfully created {len(questions)} questions",
+                status_code=201
+            )
+        else:
+            # Single question request
+            if not data.get("question_type"):
+                return error_response("question_type is required", 400)
+            if not data.get("question_text"):
+                return error_response("question_text is required", 400)
+
+            question = QuestionService.create_question(
+                quiz_id=quiz_id,
+                user_id=request.user_id,
+                user_role=request.user_role,
+                question_type=data["question_type"],
+                question_text=data["question_text"],
+                points=data.get("points", 1),
+                difficulty=data.get("difficulty", "medium"),
+                category=data.get("category"),
+                explanation=data.get("explanation"),
+                question_order=data.get("question_order"),
+                options=data.get("options"),
+            )
+            return success_response(data=question, message="Question created successfully", status_code=201)
 
     except Exception as e:
         return _handle_lms_error(e)
 
 
-@bp.route("/questions/<quiz_id>", methods=["GET"])
+@bp.route("/questions", methods=["GET"])
 @handle_exceptions
 @require_auth
-def get_quiz_questions(quiz_id):
+def get_quiz_questions():
     """
     Retrieve all questions for a quiz.
+    Only accessible to:
+    - Quiz instructor/admin
+    - Students who have started an attempt on this quiz
+    
     Instructors/admins receive is_correct on options.
     Students receive questions without correct-answer indicators.
 
-    URL Params:
-        quiz_id (str): Quiz UUID
-
     Query Params:
+        quiz_id (str): Quiz UUID (required)
         include_answers (bool): Include is_correct flag (instructor/admin only)
 
     Returns:
         200: List of question objects with options
+        403: User has not started an attempt (students only)
+        400: quiz_id is required
     """
     try:
+        quiz_id = request.args.get("quiz_id")
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        
+        # Instructors/admins can always see questions
+        if request.user_role == "student":
+            # Students must have started an attempt to see questions
+            from app.models.quizzes.quiz_attempt import QuizAttempt
+            attempt = QuizAttempt.query.filter_by(
+                quiz_id=quiz_id,
+                user_id=request.user_id
+            ).first()
+            
+            if not attempt:
+                return error_response("You must start a quiz attempt before viewing questions", 403)
+        
         # Only instructors/admins may see correct answers
         include_answers = False
-        if request.user_role in ("teacher", "admin"):
+        if request.user_role in ("teacher", "admin", "superadmin"):
             include_answers = request.args.get("include_answers", "false").lower() == "true"
 
         questions = QuestionService.get_quiz_questions(quiz_id, include_answers=include_answers)
