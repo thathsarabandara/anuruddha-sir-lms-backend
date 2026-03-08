@@ -303,11 +303,6 @@ class QuizService(BaseService):
             if not quiz:
                 raise ResourceNotFoundError("Quiz not found")
 
-            if user_role != "admin":
-                course = Course.query.get(quiz.course_id)
-                if not course or course.instructor_id != user_id:
-                    raise AuthorizationError("Only the course instructor can update this quiz")
-
             allowed_fields = (
                 "title", "description", "passing_score", "duration_minutes",
                 "max_attempts", "show_answers_after", "shuffle_questions",
@@ -319,7 +314,7 @@ class QuizService(BaseService):
                     continue
                 if field in ("available_from", "available_until") and value:
                     try:
-                        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                        value = parse_datetime(value)
                     except ValueError:
                         raise ValidationError(f"Invalid timestamp for {field}")
                 setattr(quiz, field, value)
@@ -362,10 +357,8 @@ class QuizService(BaseService):
             if not quiz:
                 raise ResourceNotFoundError("Quiz not found")
 
-            if user_role != "admin":
-                course = Course.query.get(quiz.course_id)
-                if not course or course.instructor_id != user_id:
-                    raise AuthorizationError("Only the course instructor can delete this quiz")
+            if quiz.user_id != user_id and user_role != "superadmin":
+                raise AuthorizationError("Access denied. You do not own this quiz")
 
             db.session.delete(quiz)
             db.session.commit()
@@ -405,7 +398,7 @@ class QuizService(BaseService):
         if not quiz:
             raise ResourceNotFoundError("Quiz not found")
 
-        if user_role != "admin":
+        if quiz.user_id != user_id and user_role != "superadmin":
             course = Course.query.get(quiz.course_id)
             if not course or course.instructor_id != user_id:
                 raise AuthorizationError("Access denied. You do not own this quiz")
