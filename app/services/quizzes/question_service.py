@@ -285,6 +285,31 @@ class QuestionService(BaseService):
             logger.error("Error updating question %s: %s", question_id, str(exc), exc_info=True)
             raise
 
+    @staticmethod
+    def update_question_order(question_id: str, user_id: str, user_role: str, question_order: int) -> dict:
+        """Update the display order of a question within its quiz."""
+        try:
+            if question_order < 0:
+                raise ValidationError("question_order must be a positive integer")
+
+            question = Question.query.get(question_id)
+            if not question:
+                raise ResourceNotFoundError("Question not found")
+
+            QuestionService._get_quiz_with_auth(question.quiz_id, user_id, user_role)
+
+            question.question_order = question_order
+            db.session.commit()
+            logger.info("Question %s order updated to %s by user %s", question_id, question_order, user_id)
+            return QuestionService.get_question(question_id)
+        except (ResourceNotFoundError, AuthorizationError, ValidationError):
+            db.session.rollback()
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            logger.error("Error updating order for question %s: %s", question_id, str(exc), exc_info=True)
+            raise
+
     # ──────────────────────────────────────────────────────────────────────────
     # Delete
     # ──────────────────────────────────────────────────────────────────────────
