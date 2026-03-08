@@ -4,12 +4,16 @@ All quiz-related API endpoints organized by resource type.
 
 Endpoint map:
   Quiz Management (CRUD)
-    POST   /api/v1/quiz                                   - Create quiz
+    POST   /api/v1/quiz                                   - Create quiz (optional course assignment)
     GET    /api/v1/quiz                                   - List quizzes
     GET    /api/v1/quiz/<course_id>                       - List quizzes for courses
-    GET    /api/v1/quiz/detail/<quiz_id>                         - Get quiz details
-    PUT    /api/v1/quiz/update/<quiz_id>                         - Update quiz
-    DELETE /api/v1/quiz/delete/<quiz_id>                         - Delete quiz
+    GET    /api/v1/quiz/detail/<quiz_id>                  - Get quiz details
+    PUT    /api/v1/quiz/update/<quiz_id>                  - Update quiz
+    DELETE /api/v1/quiz/delete/<quiz_id>                  - Delete quiz
+
+  Quiz-Course Assignment
+    POST   /api/v1/quiz/courses/assign                    - Assign courses to quiz
+    POST   /api/v1/quiz/courses/remove                    - Remove courses from quiz
 
   Question Management
     POST   /api/v1/quiz/questions                         - Create question (single or batch)
@@ -77,16 +81,26 @@ def _handle_lms_error(e: Exception):
 @require_role("teacher", "admin", "superadmin")
 def create_quiz():
     """
-    Create a new quiz.
+    Create a new quiz with optional course assignments.
     Requires: Teacher or Admin role.
+    
+    A quiz can be assigned to one or more courses, or created without any course.
 
     Request Body:
-        title (required), description, passing_score, duration_minutes,
-        max_attempts, show_answers_after, shuffle_questions, shuffle_answers,
-        available_from, available_until
+        title (required): Quiz title
+        description: Quiz description
+        passing_score: Passing score percentage (0-100, default 70)
+        duration_minutes: Time limit in minutes
+        max_attempts: Maximum attempts allowed (default 1)
+        show_answers_after: When to show answers (submission|later|never)
+        shuffle_questions: Boolean, randomize question order
+        shuffle_answers: Boolean, randomize answer options
+        available_from: Quiz availability start (ISO timestamp or various formats)
+        available_until: Quiz availability end (ISO timestamp or various formats)
+        course_ids: Optional - single course_id (string) or array of course_ids
 
     Returns:
-        201: Created quiz data (quiz_id, title, created_at)
+        201: Created quiz data (quiz_id, title, course_ids, created_at)
     """
     try:
         if request.is_json:
@@ -96,6 +110,11 @@ def create_quiz():
 
         if not data.get("title"):
             return error_response("title is required", 400)
+
+        # Handle course_ids - can be string or list
+        course_ids = data.get("course_ids")
+        if isinstance(course_ids, str):
+            course_ids = [course_ids] if course_ids else None
 
         quiz = QuizService.create_quiz(
             user_id=request.user_id,
@@ -109,6 +128,7 @@ def create_quiz():
             shuffle_answers=data.get("shuffle_answers", False),
             available_from=data.get("available_from"),
             available_until=data.get("available_until"),
+            course_ids=course_ids,
         )
         return success_response(data=quiz, message="Quiz created successfully", status_code=201)
 
@@ -261,6 +281,104 @@ def delete_quiz():
             user_role=request.user_role,
         )
         return success_response(message="Quiz deleted successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/courses/assign", methods=["POST"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin", "superadmin")
+def assign_courses_to_quiz():
+    """
+    Assign one or multiple courses to a quiz.
+    Only the quiz creator or admin may assign.
+
+    Request Body:
+        quiz_id (required): Quiz UUID
+        course_ids: Single course_id (string) or array of course_ids
+
+    Returns:
+        200: Updated quiz data with assigned courses
+        400: Missing required fields or validation error
+        403: Not authorized
+        404: Quiz or course not found
+    """
+    try:
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
+        quiz_id = data.get("quiz_id")
+        course_ids = data.get("course_ids")
+
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        if not course_ids:
+            return error_response("course_ids is required (string or array)", 400)
+
+        # Convert single course_id to array
+        if isinstance(course_ids, str):
+            course_ids = [course_ids]
+
+        quiz = QuizService.assign_courses_to_quiz(
+            quiz_id=quiz_id,
+            course_ids=course_ids,
+            user_id=request.user_id,
+            user_role=request.user_role,
+        )
+        return success_response(data=quiz, message="Courses assigned to quiz successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/courses/remove", methods=["POST"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin", "superadmin")
+def remove_courses_from_quiz():
+    """
+    Remove one or multiple courses from a quiz.
+    Only the quiz creator or admin may remove.
+
+    Request Body:
+        quiz_id (required): Quiz UUID
+        course_ids: Single course_id (string) or array of course_ids to remove
+
+    Returns:
+        200: Updated quiz data with remaining assigned courses
+        400: Missing required fields or validation error
+        403: Not authorized
+        404: Quiz not found
+    """
+    try:
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
+        quiz_id = data.get("quiz_id")
+        course_ids = data.get("course_ids")
+
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        if not course_ids:
+            return error_response("course_ids is required (string or array)", 400)
+
+        # Convert single course_id to array
+        if isinstance(course_ids, str):
+            course_ids = [course_ids]
+
+        quiz = QuizService.remove_courses_from_quiz(
+            quiz_id=quiz_id,
+            course_ids=course_ids,
+            user_id=request.user_id,
+            user_role=request.user_role,
+        )
+        return success_response(data=quiz, message="Courses removed from quiz successfully")
 
     except Exception as e:
         return _handle_lms_error(e)
@@ -610,12 +728,14 @@ def start_quiz_attempt():
     try:
         data = request.get_json() or {}
 
+        quiz_id = data.get("quiz_id") or request.args.get("quiz_id")
+
         if not data.get("quiz_id"):
             return error_response("quiz_id is required", 400)
 
         ip_address = request.remote_addr
         attempt = QuizAttemptService.start_attempt(
-            quiz_id=data["quiz_id"],
+            quiz_id=quiz_id,
             user_id=request.user_id,
             user_role=request.user_role,
             ip_address=ip_address,
