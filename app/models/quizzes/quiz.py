@@ -79,6 +79,9 @@ class Quiz(db.Model):
     lesson_contents = db.relationship(
         "LessonContent", backref="quiz", lazy="dynamic", cascade="all, delete-orphan"
     )
+    quiz_courses = db.relationship(
+        "QuizCourse", backref="quiz", lazy="dynamic", cascade="all, delete-orphan"
+    )
     def __repr__(self):
         return f"<Quiz {self.quiz_id} - {self.title}>"
 
