@@ -25,7 +25,7 @@ class TokenManager:
                 "username": username,
                 "role": role,
                 "iat": datetime.utcnow(),
-                "exp": datetime.utcnow()
+                "exp": datetime.utcnow()+timedelta(days=2)
                 + current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES", timedelta(minutes=30)),
             }
 
@@ -63,7 +63,7 @@ class TokenManager:
                 "username": username,
                 "token_type": "refresh",
                 "iat": datetime.utcnow(),
-                "exp": datetime.utcnow()
+                "exp": datetime.utcnow()+ timedelta(days=20)
                 + current_app.config.get("JWT_REFRESH_TOKEN_EXPIRES", timedelta(days=7)),
             }
 
