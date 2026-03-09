@@ -49,7 +49,7 @@ def set_auth_cookies(response, access_token=None, refresh_token=None):
         response[0].set_cookie(
             "access_token",
             access_token,
-            max_age=1800,  # 30 minutes
+            max_age=20000,  # 2days
             secure=is_secure,
             httponly=True,  # Prevent JavaScript access (XSS protection)
             samesite="Strict",  # CSRF protection
@@ -60,7 +60,7 @@ def set_auth_cookies(response, access_token=None, refresh_token=None):
         response[0].set_cookie(
             "refresh_token",
             refresh_token,
-            max_age=604800,  # 7 days
+            max_age=6048000,  # 20 days
             secure=is_secure,
             httponly=True,
             samesite="Strict",
