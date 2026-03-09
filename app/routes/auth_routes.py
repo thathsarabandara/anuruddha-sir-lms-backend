@@ -172,6 +172,15 @@ def register():
 
         role = data.get("role", "student")
 
+        # Handle profile picture from files (multipart/form-data) or form data
+        profile_picture = None
+        if "profile_picture" in request.files:
+            # File upload from multipart/form-data
+            profile_picture = request.files["profile_picture"]
+        elif data.get("profile_picture"):
+            # URL string from JSON or form data
+            profile_picture = data.get("profile_picture")
+
         # Build kwargs shared by both roles
         common = dict(
             email=data["email"],
@@ -179,7 +188,7 @@ def register():
             first_name=data["first_name"],
             last_name=data["last_name"],
             phone=phone, 
-            profile_picture=data.get("profile_picture"),
+            profile_picture=profile_picture,
             role=role,
             address=data.get("address"),
         )
