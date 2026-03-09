@@ -175,9 +175,18 @@ class LoginService(BaseService):
                 account_status.failed_login_attempts = 0
                 account_status.last_failed_attempt_at = None
 
-            roleid = UserRole.query.filter_by(user_id=user.user_id).first()
-            if roleid:
-                role_name = Role.query.filter_by(role_id=roleid.role_id).first().role_name
+            # Get user's role from UserRole table
+            user_role = UserRole.query.filter_by(user_id=user.user_id).first()
+            role_name = "student"  # Default role
+            
+            if user_role:
+                role_obj = Role.query.filter_by(role_id=user_role.role_id).first()
+                if role_obj:
+                    role_name = role_obj.role_name
+                    logger.debug(f"User {user.user_id} has role: {role_name}")
+            else:
+                logger.warning(f"User {user.user_id} has no role assigned! Using default 'student'")
+            
             # Generate tokens and store them in database
             access_token = TokenManager.generate_access_token(
                 user.user_id, user.email, user.username, role_name, store_in_db=True
@@ -189,7 +198,7 @@ class LoginService(BaseService):
             # Update last login
             user.last_login = datetime.utcnow()
 
-            # Log login  history
+            # Log login history
             login_record = LoginHistory(
                 user_id=user.user_id,
                 ip_address=ip_address,
@@ -203,12 +212,12 @@ class LoginService(BaseService):
             db.session.add(login_record)
             db.session.commit()
 
-            # Create session in Redis
+            # Create session in Redis with ACTUAL role
             SessionManager.create_session(
-                user.user_id, user.email, user.username, "student", access_token, refresh_token
+                user.user_id, user.email, user.username, role_name, access_token, refresh_token
             )
 
-            logger.info(f"User logged in: {email} (ID: {user.user_id})")
+            logger.info(f"User logged in: {email} (ID: {user.user_id}) with role: {role_name}")
 
             return {
                 "user_id": user.user_id,
@@ -216,7 +225,7 @@ class LoginService(BaseService):
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": "student",
+                "role": role_name,  # Use actual role, not hardcoded "student"
                 "verified": user.email_verified,
             }, access_token, refresh_token
 
