@@ -44,7 +44,7 @@ def set_auth_cookies(response, access_token=None, refresh_token=None):
     """
     # Use secure flag based on environment (True for production, False for development)
     is_secure = current_app.config.get("ENV") == "production"
-
+    
     if access_token:
         response[0].set_cookie(
             "access_token",
@@ -52,7 +52,7 @@ def set_auth_cookies(response, access_token=None, refresh_token=None):
             max_age=20000,  # 2days
             secure=is_secure,
             httponly=True,  # Prevent JavaScript access (XSS protection)
-            samesite="Strict",  # CSRF protection
+            samesite="None" if is_secure else "Lax",
             path="/",
         )
 
@@ -63,7 +63,7 @@ def set_auth_cookies(response, access_token=None, refresh_token=None):
             max_age=6048000,  # 20 days
             secure=is_secure,
             httponly=True,
-            samesite="Strict",
+            samesite="None" if is_secure else "Lax",
             path="/",
         )
 
@@ -82,6 +82,7 @@ def set_verification_token_cookie(response, verification_token):
         Updated response object with verification token cookie set
     """
     is_secure = current_app.config.get("ENV") == "production"
+    
 
     response[0].set_cookie(
         "verification_token",
@@ -89,7 +90,7 @@ def set_verification_token_cookie(response, verification_token):
         max_age=300,  # 5 minutes (OTP expiry)
         secure=is_secure,
         httponly=True,
-        samesite="Strict",
+        samesite="None" if is_secure else "Lax",
         path="/",
     )
 
