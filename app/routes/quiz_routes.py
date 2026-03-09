@@ -726,11 +726,11 @@ def start_quiz_attempt():
         422: Quiz not yet available or expired
     """
     try:
-        data = request.get_json() or {}
+        quiz_id = request.args.get("quiz_id")
 
-        quiz_id = data.get("quiz_id") or request.args.get("quiz_id")
+        course_id = request.args.get("course_id") 
 
-        if not data.get("quiz_id"):
+        if not quiz_id:
             return error_response("quiz_id is required", 400)
 
         ip_address = request.remote_addr
@@ -739,17 +739,22 @@ def start_quiz_attempt():
             user_id=request.user_id,
             user_role=request.user_role,
             ip_address=ip_address,
+            course_id=course_id,
         )
         return success_response(data=attempt, message="Quiz attempt started", status_code=201)
 
     except Exception as e:
-        return _handle_lms_error(e)
+        respone = {
+            "status": "error",
+            "message": "Failed to start quiz attempt" + str(e),
+        }
+        return respone
 
 
-@bp.route("/submit/answers/<attempt_id>", methods=["POST"])
+@bp.route("/submit/answers", methods=["POST"])
 @handle_exceptions
 @require_auth
-def save_answer(attempt_id):
+def save_answer():
     """
     Save (or update) a student's answer for a single question.
     Can be called multiple times per question to auto-save progress.
@@ -768,8 +773,13 @@ def save_answer(attempt_id):
         409: Quiz already submitted or time expired
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
 
+        attempt_id = request.args.get("attempt_id")
+        
         if not data.get("question_id"):
             return error_response("question_id is required", 400)
         if data.get("answer") is None:
