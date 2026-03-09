@@ -536,67 +536,134 @@ def auto_seed(app):
                 return
 
             # ── 1. Roles ──────────────────────────────────────────────────
-            if Role.query.count() == 0:
-                app.logger.info("[auto-seed] roles table is empty — seeding roles...")
+            roles_count = Role.query.count()
+            app.logger.info(f"[auto-seed] Checking roles... Found {roles_count} existing roles")
+            
+            if roles_count == 0:
+                app.logger.info("[auto-seed] roles table is empty — seeding all 4 roles...")
                 now = datetime.utcnow()
-                for name, description in [
+                roles_to_create = [
                     ("superadmin", "Full system access - can manage all aspects of the platform"),
                     ("admin",      "Administrative access - manages users, courses, and platform settings"),
                     ("teacher",    "Can create and manage courses, assignments, quizzes, and student progress"),
                     ("student",    "Can enroll in courses, take quizzes, submit assignments, and view progress"),
-                ]:
-                    db.session.add(Role(
-                        role_id=str(uuid.uuid4()),
-                        role_name=name,
-                        description=description,
-                        created_at=now,
-                    ))
-                db.session.commit()
-                app.logger.info("[auto-seed] ✓ Roles seeded (superadmin, admin, teacher, student)")
+                ]
+                
+                for name, description in roles_to_create:
+                    try:
+                        role = Role(
+                            role_id=str(uuid.uuid4()),
+                            role_name=name,
+                            description=description,
+                            created_at=now,
+                        )
+                        db.session.add(role)
+                        app.logger.debug(f"[auto-seed] Added role to session: {name}")
+                    except Exception as e:
+                        app.logger.error(f"[auto-seed] Error preparing role '{name}': {str(e)}")
+                        db.session.rollback()
+                        raise
+                
+                try:
+                    db.session.commit()
+                    app.logger.info("[auto-seed] ✓ All roles committed to database")
+                except Exception as e:
+                    app.logger.error(f"[auto-seed] ERROR committing roles: {str(e)}")
+                    db.session.rollback()
+                    raise
+                
+                # Verify all roles were created
+                final_role_count = Role.query.count()
+                created_roles = Role.query.all()
+                role_names = [r.role_name for r in created_roles]
+                
+                app.logger.info(f"[auto-seed] ✓ Roles seeded successfully!")
+                app.logger.info(f"[auto-seed]   Total roles in database: {final_role_count}")
+                app.logger.info(f"[auto-seed]   Roles: {', '.join(role_names)}")
+                
+                if final_role_count != 4:
+                    app.logger.warning(
+                        f"[auto-seed] WARNING: Expected 4 roles, but found {final_role_count}!"
+                    )
+                missing_roles = set(["superadmin", "admin", "teacher", "student"]) - set(role_names)
+                if missing_roles:
+                    app.logger.error(f"[auto-seed] ERROR: Missing roles: {missing_roles}")
             else:
-                app.logger.debug("[auto-seed] roles table already populated — skipping")
+                app.logger.info(f"[auto-seed] roles table already populated with {roles_count} roles — skipping")
+                # Show what roles exist
+                existing_roles = [r.role_name for r in Role.query.all()]
+                app.logger.debug(f"[auto-seed] Existing roles: {', '.join(existing_roles)}")
 
             # ── 2. Superadmin user  ───────────────────────────────────────
             if User.query.count() == 0:
                 app.logger.info("[auto-seed] users table is empty — seeding default superadmin...")
                 superadmin_role = Role.query.filter_by(role_name="superadmin").first()
-                if superadmin_role:
-                    now = datetime.utcnow()
-                    uid = str(uuid.uuid4())
-                    user = User(
-                        user_id=uid,
-                        username="superadmin_admin",
-                        email="stormprojects47@gmail.com",
-                        password_hash=PasswordManager.hash_password("SuperAdmin@123"),
-                        first_name="Super",
-                        last_name="Admin",
-                        bio="System Administrator with full access",
-                        email_verified=True,
-                        phone_verified=False,
-                        created_at=now,
-                        updated_at=now,
+                
+                if not superadmin_role:
+                    app.logger.error(
+                        "[auto-seed] ✗ CRITICAL: superadmin role not found! "
+                        "Roles may not have been seeded. Check roles table."
                     )
-                    status = UserAccountStatus(
-                        user_id=uid,
-                        is_active=True,
-                        is_banned=False,
-                        updated_at=now,
-                    )
-                    role_link = UserRole(
-                        user_role_id=str(uuid.uuid4()),
-                        user_id=uid,
-                        role_id=superadmin_role.role_id,
-                        assigned_at=now,
-                    )
-                    db.session.add_all([user, status, role_link])
-                    db.session.commit()
+                    # Fall back: try to verify all roles exist
+                    all_roles = Role.query.all()
+                    app.logger.info(f"[auto-seed] Found {len(all_roles)} roles in database: {[r.role_name for r in all_roles]}")
+                    return
+                
+                app.logger.debug(f"[auto-seed] Found superadmin role: {superadmin_role.role_id}")
+                
+                now = datetime.utcnow()
+                uid = str(uuid.uuid4())
+                
+                # Create superadmin user
+                user = User(
+                    user_id=uid,
+                    username="superadmin_admin",
+                    email="stormprojects47@gmail.com",
+                    password_hash=PasswordManager.hash_password("SuperAdmin@123"),
+                    first_name="Super",
+                    last_name="Admin",
+                    bio="System Administrator with full access",
+                    email_verified=True,
+                    phone_verified=False,
+                    created_at=now,
+                    updated_at=now,
+                )
+                
+                # Create account status
+                status = UserAccountStatus(
+                    user_id=uid,
+                    is_active=True,
+                    is_banned=False,
+                    updated_at=now,
+                )
+                
+                # Assign SUPERADMIN role (NOT student!)
+                role_link = UserRole(
+                    user_role_id=str(uuid.uuid4()),
+                    user_id=uid,
+                    role_id=superadmin_role.role_id,  # Use actual superadmin role ID
+                    assigned_at=now,
+                    assigned_by=None,  # System-assigned
+                )
+                
+                app.logger.debug(
+                    f"[auto-seed] Creating superadmin with role_id={superadmin_role.role_id}"
+                )
+                
+                db.session.add_all([user, status, role_link])
+                db.session.commit()
+                
+                # Verify the assignment worked
+                verify_role = UserRole.query.filter_by(user_id=uid).first()
+                if verify_role and verify_role.role_id == superadmin_role.role_id:
                     app.logger.info(
-                        "[auto-seed] ✓ Default superadmin created "
+                        "[auto-seed] ✓ Default superadmin created with SUPERADMIN role "
                         "(stormprojects47@gmail.com / SuperAdmin@123) — CHANGE PASSWORD!"
                     )
                 else:
-                    app.logger.warning(
-                        "[auto-seed] superadmin role not found; skipping user seed"
+                    app.logger.error(
+                        f"[auto-seed] ✗ WARNING: Superadmin created but role assignment verification failed! "
+                        f"Expected role_id={superadmin_role.role_id}, but found {verify_role.role_id if verify_role else 'no role'}"
                     )
             else:
                 app.logger.debug("[auto-seed] users table already populated — skipping")
