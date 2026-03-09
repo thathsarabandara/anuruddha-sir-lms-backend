@@ -28,7 +28,7 @@ class QuizAttemptService(BaseService):
     # ──────────────────────────────────────────────────────────────────────────
 
     @staticmethod
-    def start_attempt(quiz_id: str, user_id: str, user_role: str, ip_address: str = None) -> dict:
+    def start_attempt(quiz_id: str, user_id: str, user_role: str, ip_address: str = None, course_id: str = None) -> dict:
         """
         Start a new quiz attempt for an enrolled student.
 
