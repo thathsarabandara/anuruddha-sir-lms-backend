@@ -95,6 +95,18 @@ def create_app(config_name="development"):
     app.register_blueprint(course_routes.bp)
     app.register_blueprint(quiz_routes.bp)
 
+    # Serve uploaded files as static files
+    @app.route('/uploads/<path:filename>')
+    def serve_uploaded_file(filename):
+        """Serve uploaded files from the uploads directory"""
+        from flask import send_from_directory
+        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+        return send_from_directory(upload_folder, filename)
+
+    # Ensure uploads directory exists
+    os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
+    app.logger.info(f"Uploads folder configured at: {app.config.get('UPLOAD_FOLDER', 'uploads')}")
+
     # Import all models to register them with SQLAlchemy metadata
     # This ensures db.create_all() can properly handle all model relationships
     from app.models import (  # noqa: F401
