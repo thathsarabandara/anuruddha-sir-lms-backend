@@ -12,6 +12,8 @@ from app import db
 from app.exceptions import AuthenticationError, ValidationError
 from app.models.auth import LoginHistory, User, UserAccountStatus, Role, UserRole
 from app.models.auth.user_role import UserRole
+from app.models.users.student_profile import StudentProfile
+from app.models.users.teacher_profile import TeacherProfile
 from app.services.base_service import BaseService
 from app.utils.auth import PasswordManager, SessionManager, TokenManager
 from app.utils.validators import validate_email
@@ -219,14 +221,54 @@ class LoginService(BaseService):
 
             logger.info(f"User logged in: {email} (ID: {user.user_id}) with role: {role_name}")
 
+            if role_name == "student":
+                student_profile = StudentProfile.query.filter_by(user_id=user.user_id).first()
+                if student_profile:
+                    return {
+                        "user_id": user.user_id,
+                        "email": user.email,
+                        "username": user.username,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "role": role_name,
+                        "verified": user.email_verified,
+                        "profile_picture": user.profile_picture,
+                        "date_of_birth": student_profile.date_of_birth.isoformat() if student_profile.date_of_birth else None,
+                        "grade_level": student_profile.grade_level,
+                        "school": student_profile.school,
+                        "address": student_profile.address,
+                        "parent_name": student_profile.parent_name,
+                        "parent_contact": student_profile.parent_contact,
+                    }, access_token, refresh_token
+            elif role_name == "teacher":
+                teacher_profile = TeacherProfile.query.filter_by(user_id=user.user_id).first()
+                if teacher_profile:
+                    return {
+                        "user_id": user.user_id,
+                        "email": user.email,
+                        "username": user.username,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "role": role_name,
+                        "verified": user.email_verified,
+                        "profile_picture": user.profile_picture,
+                        "qualifications": teacher_profile.qualifications,
+                        "subjects_taught": teacher_profile.get_subjects(),
+                        "years_of_experience": teacher_profile.years_of_experience,
+                        "language_of_instruction": teacher_profile.language_of_instruction,
+                        "professional_bio": teacher_profile.professional_bio,
+                        "address": teacher_profile.address,
+                    }, access_token, refresh_token
+
             return {
                 "user_id": user.user_id,
                 "email": user.email,
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": role_name,  # Use actual role, not hardcoded "student"
+                "role": role_name,
                 "verified": user.email_verified,
+                "profile_picture": user.profile_picture,
             }, access_token, refresh_token
 
         except AuthenticationError:
