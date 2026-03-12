@@ -95,7 +95,6 @@ def create_app(config_name="development"):
     app.register_blueprint(course_routes.bp)
     app.register_blueprint(quiz_routes.bp)
 
-    # Serve uploaded files as static files
     @app.route('/uploads/<path:filename>')
     def serve_uploaded_file(filename):
         """Serve uploaded files from the uploads directory"""
