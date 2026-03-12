@@ -406,6 +406,8 @@ def login():
         response = success_response(
             data={
                 "user": user_data,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
                 "expires_in": 1800,
             },
             message="Login successful",
