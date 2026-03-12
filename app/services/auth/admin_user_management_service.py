@@ -41,14 +41,79 @@ class AdminUserManagementService(BaseService):
     """Service for admin user management operations"""
 
     # ==================== STUDENTS MANAGEMENT ====================
+    @staticmethod
+    def get_student_statistics():
+        """
+        Get statistics about student accounts
+        
+        Returns:
+            dict: {
+                'total_students': int,
+                'active_students': int,
+                'pending_students': int,
+                'banned_students': int
+            }
+        """
+        try:
+            total_students = db.session.query(User).join(
+                UserRole, User.user_id == UserRole.user_id
+            ).join(
+                Role, UserRole.role_id == Role.role_id
+            ).filter(Role.role_name == 'student').count()
+            
+            active_students = db.session.query(User).join(
+                UserRole, User.user_id == UserRole.user_id
+            ).join(
+                Role, UserRole.role_id == Role.role_id
+            ).join(
+                UserAccountStatus, User.user_id == UserAccountStatus.user_id
+            ).filter(
+                (Role.role_name == 'student') &
+                (UserAccountStatus.is_active == True) &
+                (UserAccountStatus.is_banned == False)
+            ).count()
+            
+            pending_students = db.session.query(User).join(
+                UserRole, User.user_id == UserRole.user_id
+            ).join(
+                Role, UserRole.role_id == Role.role_id
+            ).join(
+                UserAccountStatus, User.user_id == UserAccountStatus.user_id
+            ).filter(
+                (Role.role_name == 'student') &
+                (UserAccountStatus.is_active == False)
+            ).count()
+            
+            banned_students = db.session.query(User).join(
+                UserRole, User.user_id == UserRole.user_id
+            ).join(
+                Role, UserRole.role_id == Role.role_id
+            ).join(
+                UserAccountStatus, User.user_id == UserAccountStatus.user_id
+            ).filter(
+                (Role.role_name == 'student') &
+                (UserAccountStatus.is_banned == True)
+            ).count()
+            
+            return {
+                'total_students': total_students,
+                'active_students': active_students,
+                'pending_students': pending_students,
+                'banned_students': banned_students
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting student statistics: {str(e)}", exc_info=True)
+            raise ValidationError(f"Failed to get student statistics: {str(e)}")
+
 
     @staticmethod
-    def list_students(status_filter=None, page=1, limit=10):
+    def list_students(status_filter="all", page=1, limit=10):
         """
         List all students with optional status filtering
         
         Args:
-            status_filter: Filter by status - 'active', 'pending', 'banned' or None for all
+            status_filter: Filter by status - 'all', 'active', 'pending', 'banned' or None for all
             page: Page number for pagination (1-indexed)
             limit: Number of records per page
             
@@ -65,7 +130,7 @@ class AdminUserManagementService(BaseService):
         """
         try:
             # Valid status filters
-            valid_statuses = ['active', 'pending', 'banned']
+            valid_statuses = ['all', 'active', 'pending', 'banned']
             
             if status_filter and status_filter not in valid_statuses:
                 raise ValidationError(
@@ -83,7 +148,10 @@ class AdminUserManagementService(BaseService):
             
             # Apply status filter if provided
             if status_filter:
-                if status_filter == 'active':
+                if status_filter == 'all':
+                    # No additional filtering needed for 'all'
+                    pass
+                elif status_filter == 'active':
                     query = query.filter(
                         (UserAccountStatus.is_active == True) &
                         (UserAccountStatus.is_banned == False)
