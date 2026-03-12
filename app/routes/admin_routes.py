@@ -18,6 +18,37 @@ logger = logging.getLogger(__name__)
 
 # ===================== STUDENTS MANAGEMENT =====================
 
+@bp.route("/students/stat", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("admin", "superadmin")
+def student_statistics():
+    """
+    Get student statistics for admin dashboard
+    
+    Query Parameters:
+        - status: Filter by status (all, active, pending, banned)
+    Returns:
+        200: Student statistics
+        400: Validation error
+        401: Unauthorized
+        403: Forbidden (not admin)
+    """
+    try:        
+        result = AdminUserManagementService.get_student_statistics()
+        
+        return success_response(
+            data=result,
+            message="Student statistics retrieved successfully",
+            status_code=200
+        )
+        
+    except ValidationError as e:
+        return error_response(message=str(e), status_code=400)
+    except Exception as e:
+        logger.error(f"Error retrieving student statistics: {str(e)}", exc_info=True)
+        return error_response(message="Failed to retrieve student statistics", status_code=500)
+    
 
 @bp.route("/students", methods=["GET"])
 @handle_exceptions
@@ -28,7 +59,7 @@ def list_students():
     List all students with optional status filtering
     
     Query Parameters:
-        - status: Filter by status (active, pending, banned)
+        - status: Filter by status (all, active, pending, banned)
         - page: Page number (default: 1)
         - limit: Items per page (default: 10)
     
@@ -39,7 +70,7 @@ def list_students():
         403: Forbidden (not admin)
     """
     try:
-        status_filter = request.args.get("status", None)
+        status_filter = request.args.get("status", "all")
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 10, type=int)
         
