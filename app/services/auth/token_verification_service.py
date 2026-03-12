@@ -10,6 +10,8 @@ from app import db
 from app.exceptions import AuthenticationError
 from app.models.auth import AccessToken, User
 from app.models.auth.user_account_status import UserAccountStatus
+from app.models.users.student_profile import StudentProfile
+from app.models.users.teacher_profile import TeacherProfile
 from app.services.base_service import BaseService
 from app.utils.auth import TokenManager
 
@@ -68,14 +70,57 @@ class TokenVerificationService(BaseService):
 
                 logger.info(f"Token verified for user {email}")
 
-                return {
-                    "valid": True,
-                    "user_id": user_id,
-                    "email": email,
-                    "role": role,
-                    "expires_in": expires_in,
-                    "new_access_token": None,  # No new token generated
-                }
+                if role == "student":
+                    student_profile = StudentProfile.query.filter_by(user_id=user_id).first()
+                    if student_profile:
+                        return {
+                            "user_id": user_id,
+                            "email": email,
+                            "role": role,
+                            "first_name": user.first_name,
+                            "last_name": user.last_name,
+                            "grade_level": student_profile.grade_level,
+                            "expires_in": expires_in,
+                            "phone_number": user.phone,
+                            "bio": user.bio,
+                            "profile_picture": user.profile_picture,
+                            "date_of_birth":  student_profile.date_of_birth.isoformat() if student_profile.date_of_birth else None,
+                            "school": student_profile.school,
+                            "address": student_profile.address,
+                            "parent_name": student_profile.parent_name,
+                            "parent_contact": student_profile.parent_contact,
+                            "new_access_token": None,
+                        }
+                elif role == "teacher":
+                    teacher_profile = TeacherProfile.query.filter_by(user_id=user_id).first()
+                    if teacher_profile:
+                        return {
+                            "user_id": user_id,
+                            "email": email,
+                            "role": role,
+                            "first_name": user.first_name,
+                            "last_name": user.last_name,
+                            "qualifications": teacher_profile.qualifications,
+                            "subjects_taught": teacher_profile.get_subjects(),
+                            "years_of_experience": teacher_profile.years_of_experience,
+                            "language_of_instruction": teacher_profile.language_of_instruction,
+                            "professional_bio": teacher_profile.professional_bio,
+                            "address": teacher_profile.address,
+                            "expires_in": expires_in,
+                            "phone_number": user.phone,
+                            "bio": user.bio,
+                            "profile_picture": user.profile_picture,
+                            "new_access_token": None,
+                        }
+                else:
+                    return {
+                        "valid": True,
+                        "user_id": user_id,
+                        "email": email,
+                        "role": role,
+                        "expires_in": expires_in,
+                        "new_access_token": None,  # No new token generated
+                    }
 
             else:
                 # ── Access token is expired, generate new one using refresh token ──
