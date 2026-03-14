@@ -8,7 +8,7 @@ from flask import Blueprint, request
 
 from app.exceptions import ValidationError
 from app.middleware.auth_middleware import require_auth, require_role
-from app.services.auth import AdminUserManagementService
+from app.services.student.student_service import StudentManagementService
 from app.utils.decorators import handle_exceptions, validate_json
 from app.utils.response import error_response, success_response
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # ===================== STUDENTS MANAGEMENT =====================
 
-@bp.route("/students/stat", methods=["GET"])
+@bp.route("/stats", methods=["GET"])
 @handle_exceptions
 @require_auth
 @require_role("admin", "superadmin")
@@ -35,7 +35,7 @@ def student_statistics():
         403: Forbidden (not admin)
     """
     try:        
-        result = AdminUserManagementService.get_student_statistics()
+        result = StudentManagementService.get_student_statistics()
         
         return success_response(
             data=result,
@@ -50,7 +50,7 @@ def student_statistics():
         return error_response(message="Failed to retrieve student statistics", status_code=500)
     
 
-@bp.route("/students", methods=["GET"])
+@bp.route("/list", methods=["GET"])
 @handle_exceptions
 @require_auth
 @require_role("admin", "superadmin")
@@ -59,6 +59,7 @@ def list_students():
     List all students with optional status filtering
     
     Query Parameters:
+        - search: Search query for student names or emails
         - status: Filter by status (all, active, pending, banned)
         - page: Page number (default: 1)
         - limit: Items per page (default: 10)
@@ -70,6 +71,7 @@ def list_students():
         403: Forbidden (not admin)
     """
     try:
+        search_query = request.args.get("search", None)
         status_filter = request.args.get("status", "all")
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 10, type=int)
@@ -80,7 +82,8 @@ def list_students():
         if limit < 1 or limit > 100:
             limit = 10
         
-        result = AdminUserManagementService.list_students(
+        result = StudentManagementService.list_students(
+            search_query=search_query,
             status_filter=status_filter,
             page=page,
             limit=limit
@@ -99,7 +102,7 @@ def list_students():
         return error_response(message="Failed to list students", status_code=500)
 
 
-@bp.route("/student/activate", methods=["POST"])
+@bp.route("/activate", methods=["POST"])
 @handle_exceptions
 @require_auth
 @require_role("admin", "superadmin")
@@ -122,7 +125,7 @@ def activate_student():
         if not student_id:
             return error_response("student query parameter is required", 400)
         
-        result = AdminUserManagementService.activate_student(student_id)
+        result = StudentManagementService.activate_student(student_id)
         
         return success_response(
             data=result,
@@ -138,7 +141,7 @@ def activate_student():
         return error_response(message="Failed to activate student", status_code=500)
 
 
-@bp.route("/student/ban", methods=["POST"])
+@bp.route("/ban", methods=["POST"])
 @handle_exceptions
 @require_auth
 @require_role("admin", "superadmin")
@@ -179,7 +182,7 @@ def ban_student():
                     status_code=400
                 )
         
-        result = AdminUserManagementService.ban_student(
+        result = StudentManagementService.ban_student(
             student_id=student_id,
             reason=reason,
             ban_duration_hours=ban_duration_hours
