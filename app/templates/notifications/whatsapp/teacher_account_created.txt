@@ -33,6 +33,9 @@ Hi {{recipient_name}}! Your instructor account is ready. Here are your login cre
 Need help?
 📧 {{support_email}}
 📞 {{support_phone}}
+{% endblock %}
+
+{% block singlish %}
 
 අනුරුද්ධ සර් LMS වෙත සාදරයෙන් පිළිගනිමු! 🎓
 
