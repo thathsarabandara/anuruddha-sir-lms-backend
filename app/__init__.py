@@ -78,7 +78,7 @@ def create_app(config_name="development"):
     )
 
     # Register blueprints
-    from app.routes import admin_routes, auth_routes, course_routes, health_routes, notification_routes, certificate_routes, dashboard_routes, payment_routes, product_routes, report_routes, review_routes, reward_routes
+    from app.routes import admin_routes, auth_routes, course_routes, health_routes, notification_routes, certificate_routes, dashboard_routes, payment_routes, product_routes, report_routes, review_routes, reward_routes, student_routes, teacher_routes
     from app.routes import quiz_routes
 
     app.register_blueprint(health_routes.bp)
@@ -94,6 +94,8 @@ def create_app(config_name="development"):
     app.register_blueprint(report_routes.bp)
     app.register_blueprint(review_routes.bp)
     app.register_blueprint(reward_routes.bp)
+    app.register_blueprint(student_routes.bp)
+    app.register_blueprint(teacher_routes.bp)
 
     @app.route('/uploads/<path:filename>')
     def serve_uploaded_file(filename):
