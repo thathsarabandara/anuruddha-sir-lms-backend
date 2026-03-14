@@ -14,7 +14,7 @@ from app.models.courses.course import Course
 from app.models.courses.lesson_content import LessonContent
 from app.models.quizzes.quiz import Quiz
 from app.models.quizzes.quiz_course import QuizCourse
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
