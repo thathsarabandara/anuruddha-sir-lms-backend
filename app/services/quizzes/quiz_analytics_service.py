@@ -14,7 +14,7 @@ from app.models.quizzes.attempt_answer import AttemptAnswer
 from app.models.quizzes.question import Question
 from app.models.quizzes.quiz import Quiz
 from app.models.quizzes.quiz_attempt import QuizAttempt
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
