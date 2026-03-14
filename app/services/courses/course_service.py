@@ -42,6 +42,7 @@ class CourseService(BaseService):
         description: str = None,
         category_id: str = None,
         difficulty: str = None,
+        grade_level: str = None,
         language: str = "en",
         duration_hours: int = None,
         is_paid: bool = False,
@@ -59,6 +60,7 @@ class CourseService(BaseService):
             description: Course description
             category_id: Category UUID
             difficulty: beginner / intermediate / advanced
+            grade_level: Grade level for the course (e.g., "1", "2", "3-5")
             language: Language code (default 'en')
             duration_hours: Estimated duration
             is_paid: Whether course requires payment
@@ -102,6 +104,7 @@ class CourseService(BaseService):
                 description=description,
                 category_id=category_id,
                 difficulty=difficulty,
+                grade_level=grade_level,
                 language=language or "en",
                 duration_hours=duration_hours,
                 is_paid=is_paid,
@@ -154,6 +157,7 @@ class CourseService(BaseService):
         category_id: str = None,
         course_type: str = None,
         difficulty: str = None,
+        grade_level: str = None,
         language: str = None,
         is_paid: bool = None,
         status: str = "published",
@@ -182,6 +186,8 @@ class CourseService(BaseService):
             q = q.filter(Course.course_type == course_type)
         if difficulty:
             q = q.filter(Course.difficulty == difficulty)
+        if grade_level:
+            q = q.filter(Course.grade_level == grade_level)
         if language:
             q = q.filter(Course.language == language)
         if is_paid is not None:
@@ -229,7 +235,7 @@ class CourseService(BaseService):
             raise AuthorizationError("You do not have permission to update this course")
 
         allowed_fields = [
-            "title", "description", "category_id", "difficulty", "language",
+            "title", "description", "category_id", "difficulty", "grade_level", "language",
             "duration_hours", "is_paid", "price", "course_type", "visibility",
             "thumbnail_url",
         ]
