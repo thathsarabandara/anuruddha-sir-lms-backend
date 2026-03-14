@@ -12,7 +12,7 @@ from app.models.auth import AccessToken, User
 from app.models.auth.user_account_status import UserAccountStatus
 from app.models.users.student_profile import StudentProfile
 from app.models.users.teacher_profile import TeacherProfile
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.utils.auth import TokenManager
 
 logger = logging.getLogger(__name__)
