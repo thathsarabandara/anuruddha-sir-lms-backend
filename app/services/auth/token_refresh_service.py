@@ -9,7 +9,7 @@ from app import db
 from app.exceptions import AuthenticationError
 from app.models.auth import RefreshToken, User
 from app.models.auth.user_account_status import UserAccountStatus
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.utils.auth import SessionManager, TokenManager
 
 logger = logging.getLogger(__name__)
