@@ -8,7 +8,7 @@ from flask import Blueprint, request
 
 from app.exceptions import ValidationError
 from app.middleware.auth_middleware import require_auth, require_role
-from app.services.auth import AdminUserManagementService
+from app.services.teacher.teacher_service import TeacherManagementService
 from app.utils.decorators import handle_exceptions, validate_json
 from app.utils.response import error_response, success_response
 
@@ -17,8 +17,34 @@ logger = logging.getLogger(__name__)
 
 # ===================== TEACHERS MANAGEMENT =====================
 
+@bp.route("/stats", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("admin", "superadmin")
+def teacher_stats():
+    """
+    Get teacher statistics
+    
+    Returns:
+        200: Teacher statistics
+        401: Unauthorized
+        403: Forbidden (not admin)
+    """
+    try:
+        result = TeacherManagementService.get_teacher_stats()
+        
+        return success_response(
+            data=result,
+            message="Teacher statistics retrieved successfully",
+            status_code=200
+        )
+        
+    except Exception as e:
+        logger.error(f"Error retrieving teacher statistics: {str(e)}", exc_info=True)
+        return error_response(message="Failed to retrieve teacher statistics", status_code=500)
+    
 
-@bp.route("/", methods=["GET"])
+@bp.route("/list", methods=["GET"])
 @handle_exceptions
 @require_auth
 @require_role("admin", "superadmin")
@@ -27,6 +53,7 @@ def list_teachers():
     List all teachers with optional status filtering
     
     Query Parameters:
+        - search: Search query for teacher names or emails
         - status: Filter by status (active, pending, banned)
         - page: Page number (default: 1)
         - limit: Items per page (default: 10)
@@ -38,6 +65,7 @@ def list_teachers():
         403: Forbidden (not admin)
     """
     try:
+        search_query = request.args.get("search", None)
         status_filter = request.args.get("status", None)
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 10, type=int)
@@ -48,7 +76,8 @@ def list_teachers():
         if limit < 1 or limit > 100:
             limit = 10
         
-        result = AdminUserManagementService.list_teachers(
+        result = TeacherManagementService.list_teachers(
+            search_query=search_query,
             status_filter=status_filter,
             page=page,
             limit=limit
@@ -90,7 +119,7 @@ def activate_teacher():
         if not teacher_id:
             return error_response("teacher query parameter is required", 400)
         
-        result = AdminUserManagementService.activate_teacher(teacher_id)
+        result = TeacherManagementService.activate_teacher(teacher_id)
         
         return success_response(
             data=result,
@@ -148,7 +177,7 @@ def ban_teacher():
                     status_code=400
                 )
         
-        result = AdminUserManagementService.ban_teacher(
+        result = TeacherManagementService.ban_teacher(
             teacher_id=teacher_id,
             reason=reason,
             ban_duration_hours=ban_duration_hours
