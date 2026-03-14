@@ -12,7 +12,8 @@ from flask import current_app
 from app import db
 from app.exceptions import ValidationError, AuthorizationError
 from app.models import User, UserAccountStatus, UserRole, Role, StudentProfile, TeacherProfile
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -599,7 +600,6 @@ class AdminUserManagementService(BaseService):
             ValidationError: If student not found or not a student
         """
         user = User.query.filter_by(user_id=student_id).first()
-        StudentProfile = StudentProfile.query.filter_by(user_id=student_id).first()
         
         if not user:
             raise ValidationError(f"Student with ID {student_id} not found")
@@ -614,27 +614,7 @@ class AdminUserManagementService(BaseService):
         if not has_student_role:
             raise ValidationError(f"User {student_id} is not a student")
         
-        response = {
-            'user_id': user.user_id,
-            'username': user.username,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'phone': user.phone,
-            'email_verified': user.email_verified,
-            'phone_verified': user.phone_verified,
-            'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
-            'grade_level': StudentProfile.grade_level if StudentProfile else None,
-            'school': StudentProfile.school if StudentProfile else None,
-            'address': StudentProfile.address if StudentProfile else None,
-            'parent_name': StudentProfile.parent_name if StudentProfile else None,
-            'parent_contact': StudentProfile.parent_contact if StudentProfile else None,
-            'created_at': user.created_at.isoformat() if user.created_at else None,
-            'updated_at': user.updated_at.isoformat() if user.updated_at else None,
-            'last_login': user.last_login.isoformat() if user.last_login else None,
-        }
-        
-        return response
+        return user
 
     @staticmethod
     def _get_teacher_by_id(teacher_id):
@@ -651,7 +631,6 @@ class AdminUserManagementService(BaseService):
             ValidationError: If teacher not found or not a teacher
         """
         user = User.query.filter_by(user_id=teacher_id).first()
-        teacherprofile = TeacherProfile.query.filter_by(user_id=teacher_id).first()
         
         if not user:
             raise ValidationError(f"Teacher with ID {teacher_id} not found")
@@ -665,24 +644,8 @@ class AdminUserManagementService(BaseService):
         
         if not has_teacher_role:
             raise ValidationError(f"User {teacher_id} is not a teacher")
-        response = {
-            'user_id': user.user_id,
-            'username': user.username,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'phone': user.phone,
-            'email_verified': user.email_verified,
-            'phone_verified': user.phone_verified,
-            'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
-            'subject_expertise': teacherprofile.subject_expertise if teacherprofile else None,
-            'years_of_experience': teacherprofile.years_of_experience if teacherprofile else None,
-            'qualifications': teacherprofile.qualifications if teacherprofile else None,
-            'professional_bio': teacherprofile.professional_bio if teacherprofile else None,
-            'address': teacherprofile.address if teacherprofile else None,
-            'created_at': user.created_at.isoformat() if user.created_at else None,
-        }
-        return response
+        
+        return user
 
     @staticmethod
     def _format_user_with_status(user):
@@ -696,7 +659,7 @@ class AdminUserManagementService(BaseService):
             dict: Formatted user data
         """
         if (UserRole.query.filter_by(user_id=user.user_id).join(Role).filter(Role.role_name == 'student').first()):
-            StudentProfile = StudentProfile.query.filter_by(user_id=user.user_id).first()
+            student_profile = StudentProfile.query.filter_by(user_id=user.user_id).first()
             user_dict = {
                 'user_id': user.user_id,
                 'username': user.username,
@@ -706,16 +669,16 @@ class AdminUserManagementService(BaseService):
                 'phone': user.phone,
                 'email_verified': user.email_verified,
                 'phone_verified': user.phone_verified,
-                'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
-                'grade_level': StudentProfile.grade_level if StudentProfile else None,
-                'school': StudentProfile.school if StudentProfile else None,
-                'address': StudentProfile.address if StudentProfile else None,
-                'parent_name': StudentProfile.parent_name if StudentProfile else None,
-                'parent_contact': StudentProfile.parent_contact if StudentProfile else None,
+                'date_of_birth': student_profile.date_of_birth.isoformat() if student_profile.date_of_birth else None,
+                'grade_level': student_profile.grade_level if student_profile else None,
+                'school': student_profile.school if student_profile else None,
+                'address': student_profile.address if student_profile else None,
+                'parent_name': student_profile.parent_name if student_profile else None,
+                'parent_contact': student_profile.parent_contact if student_profile else None,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
             }
         elif (UserRole.query.filter_by(user_id=user.user_id).join(Role).filter(Role.role_name == 'teacher').first()):
-            teacherprofile = TeacherProfile.query.filter_by(user_id=user.user_id).first()
+            teacher_profile = TeacherProfile.query.filter_by(user_id=user.user_id).first()
             user_dict = {
                 'user_id': user.user_id,
                 'username': user.username,
@@ -725,12 +688,11 @@ class AdminUserManagementService(BaseService):
                 'phone': user.phone,
                 'email_verified': user.email_verified,
                 'phone_verified': user.phone_verified,
-                'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
-                'subject_expertise': teacherprofile.subject_expertise if teacherprofile else None,
-                'years_of_experience': teacherprofile.years_of_experience if teacherprofile else None,
-                'qualifications': teacherprofile.qualifications if teacherprofile else None,
-                'professional_bio': teacherprofile.professional_bio if teacherprofile else None,
-                'address': teacherprofile.address if teacherprofile else None,
+                'subject_expertise': teacher_profile.subjects_taught if teacher_profile else None,
+                'years_of_experience': teacher_profile.years_of_experience if teacher_profile else None,
+                'qualifications': teacher_profile.qualifications if teacher_profile else None,
+                'professional_bio': teacher_profile.professional_bio if teacher_profile else None,
+                'address': teacher_profile.address if teacher_profile else None,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
             }
         else:
@@ -743,7 +705,6 @@ class AdminUserManagementService(BaseService):
                 'phone': user.phone,
                 'email_verified': user.email_verified,
                 'phone_verified': user.phone_verified,
-                'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
             }
         
