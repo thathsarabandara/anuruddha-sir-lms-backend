@@ -22,6 +22,7 @@ class Course(db.Model):
         instructor_id: Foreign key to User (teacher)
         thumbnail_url: URL to course thumbnail image
         difficulty: Course difficulty level (beginner, intermediate, advanced)
+        grade_level: Grade level for the course (e.g., "1", "2", "3-5")
         language: Course language code (default: 'en')
         duration_hours: Estimated total course duration in hours
         is_paid: Boolean indicating if course requires payment
@@ -59,6 +60,7 @@ class Course(db.Model):
     # Course Metadata
     thumbnail_url = db.Column(db.Text, nullable=True)
     difficulty = db.Column(db.String(20), nullable=True)
+    grade_level = db.Column(db.String(100), nullable=True, index=True)
     language = db.Column(db.String(10), default="en", nullable=False)
     duration_hours = db.Column(db.Integer, nullable=True)
 
@@ -129,6 +131,7 @@ class Course(db.Model):
             "instructor_id": self.instructor_id,
             "thumbnail_url": self.thumbnail_url,
             "difficulty": self.difficulty,
+            "grade_level": self.grade_level,
             "language": self.language,
             "duration_hours": self.duration_hours,
             "is_paid": self.is_paid,
