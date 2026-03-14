@@ -13,6 +13,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
     DEBUG = False
     TESTING = False
+    ENV = "development"  # Override in DevelopmentConfig and ProductionConfig
 
     # Database Configuration
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -68,6 +69,7 @@ class DevelopmentConfig(Config):
     """Development environment configuration"""
 
     DEBUG = True
+    ENV = "development"
     SQLALCHEMY_ECHO = True
 
     # Development Database
@@ -91,6 +93,7 @@ class ProductionConfig(Config):
     """Production environment configuration"""
 
     DEBUG = False
+    ENV = "production"
     SQLALCHEMY_ECHO = False
 
     # Production Database
