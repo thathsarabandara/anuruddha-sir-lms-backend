@@ -1,0 +1,73 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Welcome to Anuruddha Sir LMS! 🎓
+
+Hi {{recipient_name}}! Your instructor account is ready. Here are your login credentials:
+
+📝 *Username:* {{username}}
+🔐 *Temporary Password:* {{temporary_password}}
+📧 *Email:* {{email}}
+
+⚠️ *Security First!*
+🔒 Change password after login
+🔐 Never share your credentials
+🛡️ Keep account secure
+
+🚀 *Start Teaching:*
+✅ Create your first course
+✅ Add learning content
+✅ Design quizzes
+✅ Manage enrollments
+✅ Track progress
+
+💡 *Pro Tips:*
+📚 Use course templates
+🎬 Add rich media content
+📊 Review student analytics
+🔔 Use communication tools
+⭐ Engage your students
+
+🎓 *Login Here:* {{login_url}}
+
+Need help?
+📧 {{support_email}}
+📞 {{support_phone}}
+
+අනුරුද්ධ සර් LMS වෙත සාදරයෙන් පිළිගනිමු! 🎓
+
+හෙලෝ {{recipient_name}}! 
+
+ඔබේ උපදේශක ගිණුම සූදානම්. ඔබේ පිවිසුම් අක්තපත්‍ර මෙන්න:
+
+📝 *පරිශීලක නාමය:* {{පරිශීලක නාමය}}
+🔐 *තාවකාලික මුරපදය:* {{තාවකාලික_මුරපදය}}
+📧 *විද්‍යුත් තැපෑල:* {{ඊමේල්}}
+
+⚠️ *පළමුව ආරක්ෂාව!*
+🔒 පිවිසීමෙන් පසු මුරපදය වෙනස් කරන්න
+🔐 ඔබේ අක්තපත්‍ර කිසි විටෙකත් බෙදා නොගන්න
+🛡️ ගිණුම ආරක්ෂිතව තබා ගන්න
+
+🚀 *ඉගැන්වීම ආරම්භ කරන්න:*
+✅ ඔබේ පළමු පාඨමාලාව සාදන්න
+✅ ඉගෙනුම් අන්තර්ගතය එක් කරන්න
+✅ ප්‍රශ්නාවලිය නිර්මාණය කරන්න
+✅ බඳවා ගැනීම් කළමනාකරණය කරන්න
+✅ ප්‍රගතිය නිරීක්ෂණය කරන්න
+
+💡 *වෘත්තික ඉඟි:*
+📚 පාඨමාලා සැකිලි භාවිතා කරන්න
+🎬 පොහොසත් මාධ්‍ය අන්තර්ගතයන් එක් කරන්න
+📊 ශිෂ්‍ය විශ්ලේෂණ සමාලෝචනය කරන්න
+🔔 සන්නිවේදන මෙවලම් භාවිතා කරන්න
+⭐ ඔබේ සිසුන් සම්බන්ධ කර ගන්න
+
+🎓 *මෙහි පිවිසෙන්න:* {{login_url}}
+
+සහාය අවශ්‍ය?
+📧 {{support_email}}
+📞 {{support_phone}}
+
+සතුටින් ඉගැන්වීම! 🌟📚
+{% endblock %}
