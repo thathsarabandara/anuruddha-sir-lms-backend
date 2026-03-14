@@ -451,3 +451,255 @@ class TeacherManagementService(BaseService):
         ]
         
         return user_dict
+
+    # ==================== ADMIN TEACHER CREATE & EDIT ====================
+
+    @staticmethod
+    def create_verified_teacher(first_name, last_name, email, phone=None, date_of_birth=None,
+                               subject_expertise=None, years_of_experience=None, 
+                               qualifications=None, professional_bio=None, address=None):
+        """
+        Create a new verified teacher account directly (admin only)
+
+        Args:
+            first_name: Teacher's first name
+            last_name: Teacher's last name
+            email: Teacher's email (must be unique)
+            phone: Optional phone number
+            date_of_birth: Optional DOB (YYYY-MM-DD)
+            subject_expertise: Optional subject expertise
+            years_of_experience: Optional years of experience
+            qualifications: Optional qualifications
+            professional_bio: Optional professional bio
+            address: Optional address
+
+        Returns:
+            dict: Created teacher with temporary password
+
+        Raises:
+            ValidationError: If required fields missing or email exists
+        """
+        try:
+            import uuid
+            import secrets
+            from werkzeug.security import generate_password_hash
+
+            # Validate required fields
+            if not first_name or not first_name.strip():
+                raise ValidationError("First name is required")
+            if not last_name or not last_name.strip():
+                raise ValidationError("Last name is required")
+            if not email or not email.strip():
+                raise ValidationError("Email is required")
+
+            # Check email uniqueness
+            existing_user = User.query.filter_by(email=email.lower()).first()
+            if existing_user:
+                raise ValidationError("Email already exists")
+
+            # Generate temporary password
+            temp_password = secrets.token_urlsafe(12)
+            password_hash = generate_password_hash(temp_password)
+
+            # Generate username
+            user_id = str(uuid.uuid4())
+            username = f"{first_name.lower()}_{user_id[-4:]}"
+
+            # Create user
+            user = User(
+                user_id=user_id,
+                username=username,
+                email=email.lower(),
+                password_hash=password_hash,
+                first_name=first_name.strip(),
+                last_name=last_name.strip(),
+                phone=phone,
+                date_of_birth=datetime.strptime(date_of_birth, "%Y-%m-%d").date() if date_of_birth else None,
+                email_verified=True,
+                phone_verified=bool(phone)
+            )
+
+            db.session.add(user)
+            db.session.flush()
+
+            # Assign teacher role
+            try:
+                teacher_role = Role.query.filter_by(role_name='teacher').first()
+                if teacher_role:
+                    user_role = UserRole(user_id=user_id, role_id=teacher_role.role_id)
+                    db.session.add(user_role)
+            except Exception as e:
+                logger.warning(f"Failed to assign teacher role: {str(e)}")
+
+            # Create teacher profile
+            try:
+                teacher_profile = TeacherProfile(
+                    user_id=user_id,
+                    subject_expertise=subject_expertise,
+                    years_of_experience=years_of_experience,
+                    qualifications=qualifications,
+                    professional_bio=professional_bio,
+                    address=address
+                )
+                db.session.add(teacher_profile)
+            except Exception as e:
+                logger.warning(f"Failed to create teacher profile: {str(e)}")
+
+            # Create account status
+            account_status = UserAccountStatus(user_id=user_id, is_active=True, is_banned=False)
+            db.session.add(account_status)
+
+            db.session.commit()
+            logger.info(f"Teacher created: {user_id}")
+
+            # Send notifications
+            _send_notification_safely(
+                'send_teacher_account_created',
+                user_id=user_id,
+                recipient_name=f"{first_name} {last_name}",
+                email=email,
+                temporary_password=temp_password,
+                username=username
+            )
+
+            return {
+                'user_id': user_id,
+                'username': username,
+                'email': email,
+                'first_name': first_name,
+                'last_name': last_name,
+                'temporary_password': temp_password,
+                'message': 'Credentials sent to teacher via email and WhatsApp'
+            }
+
+        except ValidationError:
+            raise
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating teacher: {str(e)}", exc_info=True)
+            raise ValidationError(f"Failed to create teacher: {str(e)}")
+
+    @staticmethod
+    def reset_teacher_password(teacher_id, send_notification=True):
+        """
+        Reset teacher password and optionally send notification
+        
+        Args:
+            teacher_id: Teacher user ID
+            send_notification: Whether to send password reset notification
+            
+        Returns:
+            dict: Updated teacher with new temporary password
+            
+        Raises:
+            ValidationError: If teacher not found
+        """
+        try:
+            import secrets
+            from werkzeug.security import generate_password_hash
+
+            user = User.query.filter_by(user_id=teacher_id).first()
+            if not user:
+                raise ValidationError(f"Teacher with ID {teacher_id} not found")
+
+            # Generate new temporary password
+            temp_password = secrets.token_urlsafe(12)
+            user.password_hash = generate_password_hash(temp_password)
+            db.session.commit()
+
+            logger.info(f"Password reset for teacher {teacher_id}")
+
+            if send_notification:
+                _send_notification_safely(
+                    'send_teacher_password_reset',
+                    user_id=teacher_id,
+                    recipient_name=f"{user.first_name} {user.last_name}",
+                    email=user.email,
+                    temporary_password=temp_password,
+                    username=user.username
+                )
+
+            return {
+                'user_id': teacher_id,
+                'email': user.email,
+                'username': user.username,
+                'temporary_password': temp_password if not send_notification else None,
+                'message': 'Password reset. New credentials sent to teacher.'
+            }
+
+        except ValidationError:
+            raise
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error resetting teacher password: {str(e)}", exc_info=True)
+            raise ValidationError(f"Failed to reset password: {str(e)}")
+
+    @staticmethod
+    def edit_teacher_details(teacher_id, first_name=None, last_name=None, phone=None,
+                            date_of_birth=None, subject_expertise=None, years_of_experience=None,
+                            qualifications=None, professional_bio=None, address=None):
+        """
+        Edit teacher profile details
+        
+        Args:
+            teacher_id: Teacher user ID
+            first_name: First name
+            last_name: Last name
+            phone: Phone number
+            date_of_birth: Date of birth (YYYY-MM-DD)
+            subject_expertise: Subject expertise
+            years_of_experience: Years of experience
+            qualifications: Qualifications
+            professional_bio: Professional bio
+            address: Address
+            
+        Returns:
+            dict: Updated teacher data
+            
+        Raises:
+            ValidationError: If teacher not found
+        """
+        try:
+            user = User.query.filter_by(user_id=teacher_id).first()
+            if not user:
+                raise ValidationError(f"Teacher with ID {teacher_id} not found")
+
+            # Update user fields
+            if first_name:
+                user.first_name = first_name.strip()
+            if last_name:
+                user.last_name = last_name.strip()
+            if phone is not None:
+                user.phone = phone
+            if date_of_birth:
+                user.date_of_birth = datetime.strptime(date_of_birth, "%Y-%m-%d").date()
+
+            # Update teacher profile
+            teacher_profile = TeacherProfile.query.filter_by(user_id=teacher_id).first()
+            if not teacher_profile:
+                teacher_profile = TeacherProfile(user_id=teacher_id)
+                db.session.add(teacher_profile)
+
+            if subject_expertise is not None:
+                teacher_profile.subject_expertise = subject_expertise
+            if years_of_experience is not None:
+                teacher_profile.years_of_experience = years_of_experience
+            if qualifications is not None:
+                teacher_profile.qualifications = qualifications
+            if professional_bio is not None:
+                teacher_profile.professional_bio = professional_bio
+            if address is not None:
+                teacher_profile.address = address
+
+            user.updated_at = datetime.utcnow()
+            db.session.commit()
+
+            logger.info(f"Teacher details updated: {teacher_id}")
+            return TeacherManagementService._format_user_with_status(user)
+
+        except ValidationError:
+            raise
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error editing teacher details: {str(e)}", exc_info=True)
+            raise ValidationError(f"Failed to edit teacher details: {str(e)}")
