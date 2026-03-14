@@ -201,3 +201,177 @@ def ban_student():
         logger.error(f"Error banning student {student_id}: {str(e)}", exc_info=True)
         return error_response(message="Failed to ban student", status_code=500)
 
+
+# ===================== STUDENT MANAGEMENT (ADMIN) =====================
+
+@bp.route("/create", methods=["POST"])
+@handle_exceptions
+@require_auth
+@require_role("admin", "superadmin")
+@validate_json()
+def create_student():
+    """
+    Create a new verified student account directly (admin only)
+    
+    Request Body:
+        {
+            "first_name": "string (required)",
+            "last_name": "string (required)",
+            "email": "string (required, unique)",
+            "phone": "string (optional)",
+            "date_of_birth": "YYYY-MM-DD (optional)",
+            "grade_level": "string (optional) - e.g., '5', '6', '7-8'",
+            "school": "string (optional)",
+            "address": "string (optional)",
+            "parent_name": "string (optional)",
+            "parent_contact": "string (optional)"
+        }
+    
+    Returns:
+        201: Student created with temporary password
+        400: Validation error
+        401: Unauthorized
+        403: Forbidden (not admin)
+        409: Email already exists
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()     
+        
+        result = StudentManagementService.create_verified_student(
+            first_name=data.get("first_name"),
+            last_name=data.get("last_name"),
+            email=data.get("email"),
+            phone=data.get("phone"),
+            date_of_birth=data.get("date_of_birth"),
+            grade_level=data.get("grade_level"),
+            school=data.get("school"),
+            address=data.get("address"),
+            parent_name=data.get("parent_name"),
+            parent_contact=data.get("parent_contact")
+        )
+        
+        return success_response(
+            data=result,
+            message="Student account created successfully. Credentials sent via email and WhatsApp.",
+            status_code=201
+        )
+        
+    except ValidationError as e:
+        status_code = 409 if "already exists" in str(e).lower() else 400
+        return error_response(message=str(e), status_code=status_code)
+    except Exception as e:
+        logger.error(f"Error creating student: {str(e)}", exc_info=True)
+        return error_response(message="Failed to create student", status_code=500)
+
+
+@bp.route("/reset-password", methods=["POST"])
+@handle_exceptions
+@require_auth
+@require_role("admin", "superadmin")
+@validate_json()
+def reset_student_password():
+    """
+    Reset student password and send credentials via email and WhatsApp
+    
+    Request Body:
+        {
+            "send_notification": "boolean (optional, default: true)"
+        }
+    
+    Returns:
+        200: Password reset and notification sent
+        404: Student not found
+        401: Unauthorized
+        403: Forbidden (not admin)
+    """
+    try:
+        student_id = request.args.get("student")
+        if not student_id:
+            return error_response("student query parameter is required", 400)
+        send_notification = request.args.get("send_notification", "true").lower() == "true"
+        
+        result = StudentManagementService.reset_student_password(
+            student_id=student_id,
+            send_notification=send_notification
+        )
+        
+        return success_response(
+            data=result,
+            message="Student password reset successfully. New credentials sent to student.",
+            status_code=200
+        )
+        
+    except ValidationError as e:
+        status_code = 404 if "not found" in str(e).lower() else 400
+        return error_response(message=str(e), status_code=status_code)
+    except Exception as e:
+        logger.error(f"Error resetting student password: {str(e)}", exc_info=True)
+        return error_response(message="Failed to reset student password", status_code=500)
+
+
+@bp.route("/details", methods=["PUT"])
+@handle_exceptions
+@require_auth
+@require_role("admin", "superadmin")
+@validate_json()
+def edit_student_details():
+    """
+    Edit student profile details (admin only)
+    
+    Request Body:
+        {
+            "first_name": "string (optional)",
+            "last_name": "string (optional)",
+            "phone": "string (optional)",
+            "date_of_birth": "YYYY-MM-DD (optional)",
+            "grade_level": "string (optional) - e.g., '5', '6', '7-8'",
+            "school": "string (optional)",
+            "address": "string (optional)",
+            "parent_name": "string (optional)",
+            "parent_contact": "string (optional)"
+        }
+    
+    Returns:
+        200: Details updated
+        400: Validation error
+        404: Student not found
+        401: Unauthorized
+        403: Forbidden (not admin)
+    """
+    try:
+        student_id = request.args.get("student")
+        if not student_id:
+            return error_response("student query parameter is required", 400)
+        
+        data = request.get_json(force=True, silent=True) or {}
+        if not data and request.form:
+            data = request.form.to_dict()     
+        
+        result = StudentManagementService.edit_student_details(
+            student_id=student_id,
+            first_name=data.get("first_name"),
+            last_name=data.get("last_name"),
+            phone=data.get("phone"),
+            date_of_birth=data.get("date_of_birth"),
+            grade_level=data.get("grade_level"),
+            school=data.get("school"),
+            address=data.get("address"),
+            parent_name=data.get("parent_name"),
+            parent_contact=data.get("parent_contact")
+        )
+        
+        return success_response(
+            data=result,
+            message="Student details updated successfully",
+            status_code=200
+        )
+        
+    except ValidationError as e:
+        status_code = 404 if "not found" in str(e).lower() else 400
+        return error_response(message=str(e), status_code=status_code)
+    except Exception as e:
+        logger.error(f"Error editing student details: {str(e)}", exc_info=True)
+        return error_response(message="Failed to edit student details", status_code=500)
+
