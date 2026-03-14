@@ -68,7 +68,6 @@ class StudentProfile(db.Model):
         return {
             "profile_id": self.profile_id,
             "user_id": self.user_id,
-            "whatsapp_number": self.whatsapp_number,
             "date_of_birth": self.date_of_birth.isoformat() if self.date_of_birth else None,
             "grade_level": self.grade_level,
             "school": self.school,
