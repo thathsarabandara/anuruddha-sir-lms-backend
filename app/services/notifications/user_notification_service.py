@@ -9,7 +9,7 @@ from datetime import datetime
 from app import db
 from app.exceptions import ResourceNotFoundError
 from app.models.notifications.notification import Notification
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
