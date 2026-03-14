@@ -457,3 +457,256 @@ class StudentManagementService(BaseService):
         ]
         
         return user_dict
+
+    # ==================== ADMIN STUDENT CREATE & EDIT ====================
+
+    @staticmethod
+    def create_verified_student(first_name, last_name, email, phone=None, date_of_birth=None,
+                               grade_level=None, school=None, address=None, parent_name=None, 
+                               parent_contact=None):
+        """
+        Create a new verified student account directly (admin only)
+
+        Args:
+            first_name: Student's first name
+            last_name: Student's last name
+            email: Student's email (must be unique)
+            phone: Optional phone number
+            date_of_birth: Optional DOB (YYYY-MM-DD)
+            grade_level: Optional grade level
+            school: Optional school name
+            address: Optional address
+            parent_name: Optional parent name
+            parent_contact: Optional parent contact
+
+        Returns:
+            dict: Created student with temporary password
+
+        Raises:
+            ValidationError: If required fields missing or email exists
+        """
+        try:
+            import uuid
+            import secrets
+            from werkzeug.security import generate_password_hash
+
+            # Validate required fields
+            if not first_name or not first_name.strip():
+                raise ValidationError("First name is required")
+            if not last_name or not last_name.strip():
+                raise ValidationError("Last name is required")
+            if not email or not email.strip():
+                raise ValidationError("Email is required")
+
+            # Check email uniqueness
+            existing_user = User.query.filter_by(email=email.lower()).first()
+            if existing_user:
+                raise ValidationError("Email already exists")
+
+            # Generate temporary password
+            temp_password = secrets.token_urlsafe(12)
+            password_hash = generate_password_hash(temp_password)
+
+            # Generate username
+            user_id = str(uuid.uuid4())
+            username = f"{first_name.lower()}_{user_id[-4:]}"
+
+            # Create user
+            user = User(
+                user_id=user_id,
+                username=username,
+                email=email.lower(),
+                password_hash=password_hash,
+                first_name=first_name.strip(),
+                last_name=last_name.strip(),
+                phone=phone,
+                date_of_birth=datetime.strptime(date_of_birth, "%Y-%m-%d").date() if date_of_birth else None,
+                email_verified=True,
+                phone_verified=bool(phone)
+            )
+
+            db.session.add(user)
+            db.session.flush()
+
+            # Assign student role
+            try:
+                student_role = Role.query.filter_by(role_name='student').first()
+                if student_role:
+                    user_role = UserRole(user_id=user_id, role_id=student_role.role_id)
+                    db.session.add(user_role)
+            except Exception as e:
+                logger.warning(f"Failed to assign student role: {str(e)}")
+
+            # Create student profile
+            try:
+                student_profile = StudentProfile(
+                    user_id=user_id,
+                    date_of_birth=datetime.strptime(date_of_birth, "%Y-%m-%d").date() if date_of_birth else None,
+                    grade_level=grade_level,
+                    school=school,
+                    address=address,
+                    parent_name=parent_name,
+                    parent_contact=parent_contact
+                )
+                db.session.add(student_profile)
+            except Exception as e:
+                logger.warning(f"Failed to create student profile: {str(e)}")
+
+            # Create account status
+            account_status = UserAccountStatus(user_id=user_id, is_active=True, is_banned=False)
+            db.session.add(account_status)
+
+            db.session.commit()
+            logger.info(f"Student created: {user_id}")
+
+            # Send notifications
+            _send_notification_safely(
+                'send_student_account_created',
+                user_id=user_id,
+                recipient_name=f"{first_name} {last_name}",
+                email=email,
+                temporary_password=temp_password,
+                username=username
+            )
+
+            return {
+                'user_id': user_id,
+                'username': username,
+                'email': email,
+                'first_name': first_name,
+                'last_name': last_name,
+                'temporary_password': temp_password,
+                'message': 'Credentials sent to student via email and WhatsApp'
+            }
+
+        except ValidationError:
+            raise
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating student: {str(e)}", exc_info=True)
+            raise ValidationError(f"Failed to create student: {str(e)}")
+
+    @staticmethod
+    def reset_student_password(student_id, send_notification=True):
+        """
+        Reset student password and optionally send notification
+        
+        Args:
+            student_id: Student user ID
+            send_notification: Whether to send password reset notification
+            
+        Returns:
+            dict: Updated student with new temporary password
+            
+        Raises:
+            ValidationError: If student not found
+        """
+        try:
+            import secrets
+            from werkzeug.security import generate_password_hash
+
+            user = User.query.filter_by(user_id=student_id).first()
+            if not user:
+                raise ValidationError(f"Student with ID {student_id} not found")
+
+            # Generate new temporary password
+            temp_password = secrets.token_urlsafe(12)
+            user.password_hash = generate_password_hash(temp_password)
+            db.session.commit()
+
+            logger.info(f"Password reset for student {student_id}")
+
+            if send_notification:
+                _send_notification_safely(
+                    'send_student_password_reset',
+                    user_id=student_id,
+                    recipient_name=f"{user.first_name} {user.last_name}",
+                    email=user.email,
+                    temporary_password=temp_password,
+                    username=user.username
+                )
+
+            return {
+                'user_id': student_id,
+                'email': user.email,
+                'username': user.username,
+                'temporary_password': temp_password if not send_notification else None,
+                'message': 'Password reset. New credentials sent to student.'
+            }
+
+        except ValidationError:
+            raise
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error resetting student password: {str(e)}", exc_info=True)
+            raise ValidationError(f"Failed to reset password: {str(e)}")
+
+    @staticmethod
+    def edit_student_details(student_id, first_name=None, last_name=None, phone=None,
+                            date_of_birth=None, grade_level=None, school=None, 
+                            address=None, parent_name=None, parent_contact=None):
+        """
+        Edit student profile details
+        
+        Args:
+            student_id: Student user ID
+            first_name: First name
+            last_name: Last name
+            phone: Phone number
+            date_of_birth: Date of birth (YYYY-MM-DD)
+            grade_level: Grade level
+            school: School name
+            address: Address
+            parent_name: Parent name
+            parent_contact: Parent contact
+            
+        Returns:
+            dict: Updated student data
+            
+        Raises:
+            ValidationError: If student not found
+        """
+        try:
+            user = User.query.filter_by(user_id=student_id).first()
+            if not user:
+                raise ValidationError(f"Student with ID {student_id} not found")
+
+            # Update user fields
+            if first_name:
+                user.first_name = first_name.strip()
+            if last_name:
+                user.last_name = last_name.strip()
+            if phone is not None:
+                user.phone = phone
+            if date_of_birth:
+                user.date_of_birth = datetime.strptime(date_of_birth, "%Y-%m-%d").date()
+
+            # Update student profile
+            student_profile = StudentProfile.query.filter_by(user_id=student_id).first()
+            if not student_profile:
+                student_profile = StudentProfile(user_id=student_id)
+                db.session.add(student_profile)
+
+            if grade_level is not None:
+                student_profile.grade_level = grade_level
+            if school is not None:
+                student_profile.school = school
+            if address is not None:
+                student_profile.address = address
+            if parent_name is not None:
+                student_profile.parent_name = parent_name
+            if parent_contact is not None:
+                student_profile.parent_contact = parent_contact
+
+            user.updated_at = datetime.utcnow()
+            db.session.commit()
+
+            logger.info(f"Student details updated: {student_id}")
+            return StudentManagementService._format_user_with_status(user)
+
+        except ValidationError:
+            raise
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error editing student details: {str(e)}", exc_info=True)
+            raise ValidationError(f"Failed to edit student details: {str(e)}")
