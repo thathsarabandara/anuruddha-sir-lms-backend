@@ -9,7 +9,7 @@ from app import db
 from app.exceptions import ResourceNotFoundError, ValidationError
 from app.models.notifications.notification_preferences import NotificationPreferences
 from app.models.notifications.notification_type_preferences import NotificationTypePreferences
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
