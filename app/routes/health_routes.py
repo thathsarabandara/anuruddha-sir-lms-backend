@@ -5,7 +5,7 @@ API endpoints for health monitoring
 
 from flask import Blueprint, jsonify
 
-from app.services.health_service import HealthCheckService
+from app.services.health.health_service import HealthCheckService
 
 bp = Blueprint("health", __name__, url_prefix="/api/v1/health")
 
