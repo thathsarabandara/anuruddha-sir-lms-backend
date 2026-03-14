@@ -12,7 +12,7 @@ from app.models.courses.course import Course
 from app.models.quizzes.question import Question
 from app.models.quizzes.question_option import QuestionOption
 from app.models.quizzes.quiz import Quiz
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
