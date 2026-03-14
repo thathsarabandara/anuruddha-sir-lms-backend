@@ -20,7 +20,7 @@ from app.models.auth.role import Role
 from app.models.auth.user_role import UserRole
 from app.models.users.student_profile import StudentProfile
 from app.models.users.teacher_profile import TeacherProfile
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.services.notifications.notification_service import NotificationService
 from app.utils.auth import OTPManager, PasswordManager, SessionManager
 from app.utils.file_handler import FileHandler
