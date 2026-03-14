@@ -14,7 +14,7 @@ from app.models.auth import LoginHistory, User, UserAccountStatus, Role, UserRol
 from app.models.auth.user_role import UserRole
 from app.models.users.student_profile import StudentProfile
 from app.models.users.teacher_profile import TeacherProfile
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.utils.auth import PasswordManager, SessionManager, TokenManager
 from app.utils.validators import validate_email
 
