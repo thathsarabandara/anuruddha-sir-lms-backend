@@ -13,7 +13,7 @@ from app import db
 from app.exceptions import AuthorizationError, ConflictError, ResourceNotFoundError, ValidationError
 from app.models.courses.course import Course
 from app.models.courses.course_status_audit import CourseStatusAudit
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
