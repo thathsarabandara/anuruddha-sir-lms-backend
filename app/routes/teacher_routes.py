@@ -83,8 +83,24 @@ def list_teachers():
             limit=limit
         )
         
+        # Format response to match frontend expectations
+        import math
+        total_pages = math.ceil(result['total'] / result['limit']) if result['total'] > 0 else 1
+        
+        formatted_response = {
+            'teachers': result['teachers'],
+            'pagination': {
+                'current_page': result['page'],
+                'total_pages': total_pages,
+                'total_count': result['total'],
+                'page_size': result['limit'],
+                'has_next': result['page'] < total_pages,
+                'has_previous': result['page'] > 1
+            }
+        }
+        
         return success_response(
-            data=result,
+            data=formatted_response,
             message="Teachers retrieved successfully",
             status_code=200
         )
