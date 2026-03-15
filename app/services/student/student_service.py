@@ -82,7 +82,8 @@ class StudentManagementService(BaseService):
                 UserAccountStatus, User.user_id == UserAccountStatus.user_id
             ).filter(
                 (Role.role_name == 'student') &
-                (UserAccountStatus.is_active == False)
+                (UserAccountStatus.is_active == False)&
+                (UserAccountStatus.is_banned == False)
             ).count()
             
             banned_students = db.session.query(User).join(
@@ -93,7 +94,8 @@ class StudentManagementService(BaseService):
                 UserAccountStatus, User.user_id == UserAccountStatus.user_id
             ).filter(
                 (Role.role_name == 'student') &
-                (UserAccountStatus.is_banned == True)
+                (UserAccountStatus.is_banned == True)&
+                (UserAccountStatus.is_active == True)
             ).count()
             
             return {
@@ -168,11 +170,13 @@ class StudentManagementService(BaseService):
                     )
                 elif status_filter == 'pending':
                     query = query.filter(
-                        UserAccountStatus.is_active == False
+                        (UserAccountStatus.is_active == False) &
+                        (UserAccountStatus.is_banned == False)
                     )
                 elif status_filter == 'banned':
                     query = query.filter(
-                        UserAccountStatus.is_banned == True
+                        (UserAccountStatus.is_active == True) &
+                        (UserAccountStatus.is_banned == True)
                     )
             
             # Get total count
@@ -301,7 +305,6 @@ class StudentManagementService(BaseService):
             if not account_status:
                 account_status = UserAccountStatus(
                     user_id=student_id,
-                    is_active=False,
                     is_banned=True,
                     ban_reason=reason,
                     banned_at=datetime.utcnow()
@@ -313,7 +316,6 @@ class StudentManagementService(BaseService):
                 db.session.add(account_status)
             else:
                 account_status.is_banned = True
-                account_status.is_active = False
                 account_status.ban_reason = reason
                 account_status.banned_at = datetime.utcnow()
                 if ban_duration_hours:
@@ -400,37 +402,30 @@ class StudentManagementService(BaseService):
         Returns:
             dict: Formatted user data
         """
-        if (UserRole.query.filter_by(user_id=user.user_id).join(Role).filter(Role.role_name == 'student').first()):
-            student_profile = StudentProfile.query.filter_by(user_id=user.user_id).first()
-            user_dict = {
-                'user_id': user.user_id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'phone': user.phone,
-                'email_verified': user.email_verified,
-                'phone_verified': user.phone_verified,
-                'date_of_birth': student_profile.date_of_birth.isoformat() if student_profile.date_of_birth else None,
-                'grade_level': student_profile.grade_level if student_profile else None,
-                'school': student_profile.school if student_profile else None,
-                'address': student_profile.address if student_profile else None,
-                'parent_name': student_profile.parent_name if student_profile else None,
-                'parent_contact': student_profile.parent_contact if student_profile else None,
-                'created_at': user.created_at.isoformat() if user.created_at else None,
-            }
-        else:
-            user_dict = {
-                'user_id': user.user_id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'phone': user.phone,
-                'email_verified': user.email_verified,
-                'phone_verified': user.phone_verified,
-                'created_at': user.created_at.isoformat() if user.created_at else None,
-            }
+        student_profile = StudentProfile.query.filter_by(user_id=user.user_id).first()
+        
+        user_dict = {
+            'id': user.user_id,  # Add id field for frontend compatibility
+            'user_id': user.user_id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'full_name': f"{user.first_name} {user.last_name}",
+            'phone': user.phone,
+            'profile_picture': user.profile_picture,
+            'bio': user.bio,
+            'email_verified': user.email_verified,
+            'phone_verified': user.phone_verified,
+            'date_of_birth': student_profile.date_of_birth.isoformat() if student_profile and student_profile.date_of_birth else None,
+            'grade_level': student_profile.grade_level if student_profile else None,
+            'school': student_profile.school if student_profile else None,
+            'address': student_profile.address if student_profile else None,
+            'parent_name': student_profile.parent_name if student_profile else None,
+            'parent_contact': student_profile.parent_contact if student_profile else None,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+            'updated_at': user.updated_at.isoformat() if user.updated_at else None,
+        }
         
         # Add account status if available
         if user.account_status:
@@ -452,9 +447,7 @@ class StudentManagementService(BaseService):
         
         # Add user roles
         user_roles = UserRole.query.filter_by(user_id=user.user_id).all()
-        user_dict['roles'] = [
-            role.role.role_name for role in user_roles if role.role
-        ]
+        user_dict['roles'] = [role.role.role_name for role in user_roles if role.role]
         
         return user_dict
 
@@ -520,7 +513,6 @@ class StudentManagementService(BaseService):
                 first_name=first_name.strip(),
                 last_name=last_name.strip(),
                 phone=phone,
-                date_of_birth=datetime.strptime(date_of_birth, "%Y-%m-%d").date() if date_of_birth else None,
                 email_verified=True,
                 phone_verified=bool(phone)
             )
