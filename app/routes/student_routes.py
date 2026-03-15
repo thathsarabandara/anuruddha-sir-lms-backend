@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @bp.route("/stats", methods=["GET"])
 @handle_exceptions
 @require_auth
-@require_role("admin", "superadmin")
+@require_role("admin", "superadmin", "teacher")
 def student_statistics():
     """
     Get student statistics for admin dashboard
@@ -53,7 +53,7 @@ def student_statistics():
 @bp.route("/list", methods=["GET"])
 @handle_exceptions
 @require_auth
-@require_role("admin", "superadmin")
+@require_role("admin", "superadmin", "teacher")
 def list_students():
     """
     List all students with optional status filtering
@@ -121,7 +121,7 @@ def list_students():
 @bp.route("/activate", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin", "superadmin")
+@require_role("admin", "superadmin", "teacher")
 def activate_student():
     """
     Activate a student account
@@ -160,7 +160,7 @@ def activate_student():
 @bp.route("/ban", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin", "superadmin")
+@require_role("admin", "superadmin", "teacher")
 @validate_json()
 def ban_student():
     """
@@ -216,7 +216,7 @@ def ban_student():
 @bp.route("/create", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin", "superadmin")
+@require_role("admin", "superadmin", "teacher")
 @validate_json()
 def create_student():
     """
@@ -278,7 +278,7 @@ def create_student():
 @bp.route("/reset-password", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("admin", "superadmin")
+@require_role("admin", "superadmin", "teacher")
 @validate_json()
 def reset_student_password():
     """
@@ -323,7 +323,7 @@ def reset_student_password():
 @bp.route("/details", methods=["PUT"])
 @handle_exceptions
 @require_auth
-@require_role("admin", "superadmin")
+@require_role("admin", "superadmin", "teacher")
 @validate_json()
 def edit_student_details():
     """
