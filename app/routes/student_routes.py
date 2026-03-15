@@ -89,8 +89,24 @@ def list_students():
             limit=limit
         )
         
+        # Format response to match frontend expectations
+        import math
+        total_pages = math.ceil(result['total'] / result['limit']) if result['total'] > 0 else 1
+        
+        formatted_response = {
+            'students': result['students'],
+            'pagination': {
+                'current_page': result['page'],
+                'total_pages': total_pages,
+                'total_count': result['total'],
+                'page_size': result['limit'],
+                'has_next': result['page'] < total_pages,
+                'has_previous': result['page'] > 1
+            }
+        }
+        
         return success_response(
-            data=result,
+            data=formatted_response,
             message="Students retrieved successfully",
             status_code=200
         )
@@ -171,21 +187,13 @@ def ban_student():
         if not student_id:
             return error_response("student query parameter is required", 400)
         data = request.get_json() or {}
+        if not data and request.form:
+            data = request.form.to_dict()
         reason = data.get("reason")
-        ban_duration_hours = data.get("ban_duration_hours")
-        
-        # Validate ban_duration_hours if provided
-        if ban_duration_hours is not None:
-            if not isinstance(ban_duration_hours, int) or ban_duration_hours < 1:
-                return error_response(
-                    message="ban_duration_hours must be a positive integer",
-                    status_code=400
-                )
         
         result = StudentManagementService.ban_student(
             student_id=student_id,
             reason=reason,
-            ban_duration_hours=ban_duration_hours
         )
         
         return success_response(
@@ -196,6 +204,7 @@ def ban_student():
         
     except ValidationError as e:
         status_code = 404 if "not found" in str(e).lower() else 400
+        logger.error(f"Validation error banning student {student_id}: {str(e)}", exc_info=True)
         return error_response(message=str(e), status_code=status_code)
     except Exception as e:
         logger.error(f"Error banning student {student_id}: {str(e)}", exc_info=True)
