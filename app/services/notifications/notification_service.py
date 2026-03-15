@@ -1360,8 +1360,8 @@ class NotificationService:
         # Derive defaults if not provided
         frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
         login_url = login_url or f"{frontend_url}/login"
-        support_email = support_email or current_app.config.get("SUPPORT_EMAIL", "support@example.com")
-        support_phone = support_phone or current_app.config.get("SUPPORT_PHONE", "+1-800-000-0000")
+        support_email = support_email or current_app.config.get("FRONTEND_URL", "support@example.com")
+        support_phone = support_phone or current_app.config.get("FRONTEND_URL", "+1-800-000-0000")
         
         variables = {
             'username': username,
@@ -1381,8 +1381,8 @@ class NotificationService:
         # Derive defaults if not provided
         frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
         login_url = login_url or f"{frontend_url}/login"
-        support_email = support_email or current_app.config.get("SUPPORT_EMAIL", "support@example.com")
-        support_phone = support_phone or current_app.config.get("SUPPORT_PHONE", "+1-800-000-0000")
+        support_email = support_email or current_app.config.get("FRONTEND_URL", "support@example.com")
+        support_phone = support_phone or current_app.config.get("FRONTEND_URL", "+1-800-000-0000")
         
         variables = {
             'username': username,
@@ -1402,8 +1402,8 @@ class NotificationService:
         # Derive defaults if not provided
         frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
         login_url = login_url or f"{frontend_url}/login"
-        support_email = support_email or current_app.config.get("SUPPORT_EMAIL", "support@example.com")
-        support_phone = support_phone or current_app.config.get("SUPPORT_PHONE", "+1-800-000-0000")
+        support_email = support_email or current_app.config.get("FRONTEND_URL", "support@example.com")
+        support_phone = support_phone or current_app.config.get("FRONTEND_URL", "+1-800-000-0000")
         
         variables = {
             'username': username,
