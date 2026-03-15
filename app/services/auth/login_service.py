@@ -121,6 +121,11 @@ class LoginService(BaseService):
                 raise AuthenticationError("Account has not been verified")
 
             if account_status and account_status.is_banned:
+                # If no expiration date, ban is permanent
+                if account_status.ban_expires_at is None:
+                    raise AuthenticationError("Account is permanently banned")
+                
+                # Check if ban has expired
                 if account_status.ban_expires_at > datetime.utcnow():
                     remaining_hours = (
                         account_status.ban_expires_at - datetime.utcnow()
@@ -162,12 +167,10 @@ class LoginService(BaseService):
                         failed_attempts=account_status.failed_login_attempts,
                         ban_expires_at=account_status.ban_expires_at,
                     )
-                    remaining_attempts = LoginService.MAX_LOGIN_ATTEMPTS - account_status.failed_login_attempts
-                
-
-                if remaining_attempts <= 0:
                     raise AuthenticationError("Account locked due to too many failed attempts")
 
+                # Show remaining attempts for non-locked accounts
+                remaining_attempts = LoginService.MAX_LOGIN_ATTEMPTS - account_status.failed_login_attempts
                 raise AuthenticationError(
                     f"Invalid email or password. {remaining_attempts} attempts remaining"
                 )
