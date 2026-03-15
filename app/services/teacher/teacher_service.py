@@ -83,7 +83,8 @@ class TeacherManagementService(BaseService):
                 UserAccountStatus, User.user_id == UserAccountStatus.user_id
             ).filter(
                 (Role.role_name == 'teacher') &
-                (UserAccountStatus.is_active == False)
+                (UserAccountStatus.is_active == False) &
+                (UserAccountStatus.is_banned == False)
             ).count()
             
             banned_teachers = db.session.query(User).join(
@@ -94,7 +95,8 @@ class TeacherManagementService(BaseService):
                 UserAccountStatus, User.user_id == UserAccountStatus.user_id
             ).filter(
                 (Role.role_name == 'teacher') &
-                (UserAccountStatus.is_banned == True)
+                (UserAccountStatus.is_banned == True) &
+                (UserAccountStatus.is_active == False)
             ).count()
             
             return {
@@ -131,7 +133,7 @@ class TeacherManagementService(BaseService):
         """
         try:
             # Valid status filters
-            valid_statuses = ['active', 'pending', 'banned']
+            valid_statuses = ['all', 'active', 'pending', 'banned']
             
             if status_filter and status_filter not in valid_statuses:
                 raise ValidationError(
@@ -157,18 +159,22 @@ class TeacherManagementService(BaseService):
             
             # Apply status filter if provided
             if status_filter:
-                if status_filter == 'active':
+                if status_filter == 'all':
+                    pass  # No additional filtering needed
+                elif status_filter == 'active':
                     query = query.filter(
                         (UserAccountStatus.is_active == True) &
                         (UserAccountStatus.is_banned == False)
                     )
                 elif status_filter == 'pending':
                     query = query.filter(
-                        UserAccountStatus.is_active == False
+                        (UserAccountStatus.is_active == False) &
+                        (UserAccountStatus.is_banned == False)
                     )
                 elif status_filter == 'banned':
                     query = query.filter(
-                        UserAccountStatus.is_banned == True
+                        (UserAccountStatus.is_banned == True) &
+                        (UserAccountStatus.is_active == True)
                     )
             
             # Get total count
@@ -410,7 +416,6 @@ class TeacherManagementService(BaseService):
             'bio': user.bio,
             'email_verified': user.email_verified,
             'phone_verified': user.phone_verified,
-            'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
             'subject_expertise': teacher_profile.subjects_taught if teacher_profile else None,
             'years_of_experience': teacher_profile.years_of_experience if teacher_profile else None,
             'qualifications': teacher_profile.qualifications if teacher_profile else None,
@@ -447,7 +452,7 @@ class TeacherManagementService(BaseService):
     # ==================== ADMIN TEACHER CREATE & EDIT ====================
 
     @staticmethod
-    def create_verified_teacher(first_name, last_name, email, phone=None, date_of_birth=None,
+    def create_verified_teacher(first_name, last_name, email, phone=None,
                                subject_expertise=None, years_of_experience=None, 
                                qualifications=None, professional_bio=None, address=None):
         """
@@ -506,7 +511,6 @@ class TeacherManagementService(BaseService):
                 first_name=first_name.strip(),
                 last_name=last_name.strip(),
                 phone=phone,
-                date_of_birth=datetime.strptime(date_of_birth, "%Y-%m-%d").date() if date_of_birth else None,
                 email_verified=True,
                 phone_verified=bool(phone)
             )
