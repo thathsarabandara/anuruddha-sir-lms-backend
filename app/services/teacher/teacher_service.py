@@ -253,7 +253,7 @@ class TeacherManagementService(BaseService):
                     _send_notification_safely(
                         'send_teacher_welcome_first_approval',
                         user_id=teacher_id,
-                        recipient_name=recipient_name,
+                        username=user.username,
                         dashboard_url=dashboard_url,
                         support_url=support_url
                     )
@@ -262,7 +262,7 @@ class TeacherManagementService(BaseService):
                     _send_notification_safely(
                         'send_teacher_account_activated',
                         user_id=teacher_id,
-                        recipient_name=recipient_name,
+                        username=user.username,
                         dashboard_url=dashboard_url,
                         support_url=support_url
                     )
@@ -339,7 +339,7 @@ class TeacherManagementService(BaseService):
                 _send_notification_safely(
                     'send_teacher_account_banned',
                     user_id=teacher_id,
-                    recipient_name=recipient_name,
+                    username=user.username,
                     ban_reason=reason,
                     banned_at=banned_at,
                     ban_expires_at=ban_expires_at,
@@ -552,10 +552,12 @@ class TeacherManagementService(BaseService):
             _send_notification_safely(
                 'send_teacher_account_created',
                 user_id=user_id,
-                recipient_name=f"{first_name} {last_name}",
+                username=username,
                 email=email,
                 temporary_password=temp_password,
-                username=username
+                login_url=f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/login",
+                support_email="support@lms.example.com",
+                support_phone="+1-800-000-0000"
             )
 
             return {
@@ -609,10 +611,12 @@ class TeacherManagementService(BaseService):
                 _send_notification_safely(
                     'send_teacher_password_reset',
                     user_id=teacher_id,
-                    recipient_name=f"{user.first_name} {user.last_name}",
+                    username=user.username,
                     email=user.email,
                     temporary_password=temp_password,
-                    username=user.username
+                    login_url=f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/login",
+                    support_email="support@lms.example.com",
+                    support_phone="+1-800-000-0000"
                 )
 
             return {
