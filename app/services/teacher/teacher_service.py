@@ -395,36 +395,30 @@ class TeacherManagementService(BaseService):
         Returns:
             dict: Formatted user data
         """
-        if (UserRole.query.filter_by(user_id=user.user_id).join(Role).filter(Role.role_name == 'teacher').first()):
-            teacher_profile = TeacherProfile.query.filter_by(user_id=user.user_id).first()
-            user_dict = {
-                'user_id': user.user_id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'phone': user.phone,
-                'email_verified': user.email_verified,
-                'phone_verified': user.phone_verified,
-                'subject_expertise': teacher_profile.subjects_taught if teacher_profile else None,
-                'years_of_experience': teacher_profile.years_of_experience if teacher_profile else None,
-                'qualifications': teacher_profile.qualifications if teacher_profile else None,
-                'professional_bio': teacher_profile.professional_bio if teacher_profile else None,
-                'address': teacher_profile.address if teacher_profile else None,
-                'created_at': user.created_at.isoformat() if user.created_at else None,
-            }
-        else:
-            user_dict = {
-                'user_id': user.user_id,
-                'username': user.username,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'phone': user.phone,
-                'email_verified': user.email_verified,
-                'phone_verified': user.phone_verified,
-                'created_at': user.created_at.isoformat() if user.created_at else None,
-            }
+        teacher_profile = TeacherProfile.query.filter_by(user_id=user.user_id).first()
+        
+        user_dict = {
+            'id': user.user_id,  # Add id field for frontend compatibility
+            'user_id': user.user_id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'full_name': f"{user.first_name} {user.last_name}",
+            'phone': user.phone,
+            'profile_picture': user.profile_picture,
+            'bio': user.bio,
+            'email_verified': user.email_verified,
+            'phone_verified': user.phone_verified,
+            'date_of_birth': user.date_of_birth.isoformat() if user.date_of_birth else None,
+            'subject_expertise': teacher_profile.subjects_taught if teacher_profile else None,
+            'years_of_experience': teacher_profile.years_of_experience if teacher_profile else None,
+            'qualifications': teacher_profile.qualifications if teacher_profile else None,
+            'professional_bio': teacher_profile.professional_bio if teacher_profile else None,
+            'address': teacher_profile.address if teacher_profile else None,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+            'updated_at': user.updated_at.isoformat() if user.updated_at else None,
+        }
         
         # Add account status if available
         if user.account_status:
@@ -446,9 +440,7 @@ class TeacherManagementService(BaseService):
         
         # Add user roles
         user_roles = UserRole.query.filter_by(user_id=user.user_id).all()
-        user_dict['roles'] = [
-            role.role.role_name for role in user_roles if role.role
-        ]
+        user_dict['roles'] = [role.role.role_name for role in user_roles if role.role]
         
         return user_dict
 
