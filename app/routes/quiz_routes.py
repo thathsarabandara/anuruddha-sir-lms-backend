@@ -34,6 +34,7 @@ Endpoint map:
     GET    /api/v1/quiz/<quiz_id>/submissions/<user_id>   - Get submission for grading
 
   Analytics Endpoints
+    GET    /api/v1/quiz/dashboard/teacher-stats           - Teacher dashboard statistics
     GET    /api/v1/quiz/<quiz_id>/statistics              - Quiz statistics (instructor)
     GET    /api/v1/quiz/questions/<question_id>/analytics - Question analytics
 """
@@ -949,6 +950,34 @@ def get_submission_for_grading(quiz_id, user_id):
 # ══════════════════════════════════════════════════════════════════════════════
 # Analytics Endpoints (endpoints 15-16)
 # ══════════════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/dashboard/teacher-stats", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin", "superadmin")
+def get_teacher_dashboard_stats():
+    """
+    Get teacher dashboard statistics overview.
+    Requires: Teacher, Admin, or Superadmin role.
+
+    Returns:
+        200: Dashboard statistics with 4 metrics:
+             - total_quizzes: Total number of quizzes
+             - published_quizzes: Number of published quizzes
+             - draft_quizzes: Number of draft quizzes
+             - quizzes_this_month: Quizzes created in current month
+    """
+    try:
+        stats = QuizAnalyticsService.get_teacher_dashboard_stats(
+            user_id=request.user_id
+        )
+        return success_response(
+            data=stats,
+            message="Teacher dashboard statistics retrieved successfully"
+        )
+    except Exception as e:
+        return _handle_lms_error(e)
 
 
 @bp.route("/<quiz_id>/statistics", methods=["GET"])
