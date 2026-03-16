@@ -62,6 +62,9 @@ class Quiz(db.Model):
     available_until = db.Column(
         db.DateTime, nullable=True, index=True, default=lambda: datetime.utcnow() + timedelta(days=365*5)
     )
+    
+    # Publishing Status
+    is_published = db.Column(db.Boolean, default=False, nullable=False)
 
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -99,6 +102,7 @@ class Quiz(db.Model):
             "shuffle_answers": self.shuffle_answers,
             "available_from": self.available_from.isoformat() if self.available_from else None,
             "available_until": self.available_until.isoformat() if self.available_until else None,
+            "is_published": self.is_published,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
