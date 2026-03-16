@@ -234,6 +234,7 @@ class LoginService(BaseService):
                         "first_name": user.first_name,
                         "last_name": user.last_name,
                         "role": role_name,
+                        "phone": user.phone,
                         "verified": user.email_verified,
                         "profile_picture": user.profile_picture,
                         "date_of_birth": student_profile.date_of_birth.isoformat() if student_profile.date_of_birth else None,
