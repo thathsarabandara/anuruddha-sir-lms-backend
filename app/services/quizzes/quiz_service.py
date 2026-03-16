@@ -328,7 +328,7 @@ class QuizService(BaseService):
             allowed_fields = (
                 "title", "description", "passing_score", "duration_minutes",
                 "max_attempts", "show_answers_after", "shuffle_questions",
-                "shuffle_answers", "available_from", "available_until",
+                "shuffle_answers", "available_from", "available_until", "is_published",
             )
 
             for field, value in kwargs.items():
