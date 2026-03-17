@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 from app import db
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 
 class HealthCheckService(BaseService):

@@ -101,7 +101,7 @@ class LessonContent(db.Model):
     pdf_file_size_bytes = db.Column(db.Integer, nullable=True)
 
     # Quiz Content Fields
-    quiz_id = db.Column(db.String(36), nullable=True)
+    quiz_id = db.Column(db.String(36), db.ForeignKey("quizzes.quiz_id", ondelete="SET NULL"), nullable=True, index=True)
     passing_score = db.Column(db.Integer, nullable=True)
     is_mandatory = db.Column(db.Boolean, default=False, nullable=True)
 

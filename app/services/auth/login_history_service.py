@@ -8,7 +8,7 @@ import logging
 from app import db
 from app.exceptions import ValidationError
 from app.models.auth import LoginHistory, User
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.utils.helpers import get_page_and_limit, get_offset_from_page
 
 logger = logging.getLogger(__name__)

@@ -51,12 +51,7 @@ def create_app(config_name="development"):
 
     # Enable CORS
     allowed_origins = [
-        "http://localhost:3000",
         "http://localhost:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
     ]
     
     # Add production origins if in production
@@ -64,8 +59,6 @@ def create_app(config_name="development"):
         allowed_origins.extend(
             [
                 "https://yourdomain.com",
-                "https://www.yourdomain.com",
-                "https://api.yourdomain.com",
             ]
         )
     
@@ -85,7 +78,7 @@ def create_app(config_name="development"):
     )
 
     # Register blueprints
-    from app.routes import admin_routes, auth_routes, course_routes, health_routes, notification_routes
+    from app.routes import admin_routes, auth_routes, course_routes, health_routes, notification_routes, certificate_routes, dashboard_routes, payment_routes, product_routes, report_routes, review_routes, reward_routes, student_routes, teacher_routes
     from app.routes import quiz_routes
 
     app.register_blueprint(health_routes.bp)
@@ -94,6 +87,26 @@ def create_app(config_name="development"):
     app.register_blueprint(notification_routes.bp)
     app.register_blueprint(course_routes.bp)
     app.register_blueprint(quiz_routes.bp)
+    app.register_blueprint(certificate_routes.bp)
+    app.register_blueprint(dashboard_routes.bp)
+    app.register_blueprint(payment_routes.bp)
+    app.register_blueprint(product_routes.bp)
+    app.register_blueprint(report_routes.bp)
+    app.register_blueprint(review_routes.bp)
+    app.register_blueprint(reward_routes.bp)
+    app.register_blueprint(student_routes.bp)
+    app.register_blueprint(teacher_routes.bp)
+
+    @app.route('/uploads/<path:filename>')
+    def serve_uploaded_file(filename):
+        """Serve uploaded files from the uploads directory"""
+        from flask import send_from_directory
+        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+        return send_from_directory(upload_folder, filename)
+
+    # Ensure uploads directory exists
+    os.makedirs(app.config.get('UPLOAD_FOLDER', 'uploads'), exist_ok=True)
+    app.logger.info(f"Uploads folder configured at: {app.config.get('UPLOAD_FOLDER', 'uploads')}")
 
     # Import all models to register them with SQLAlchemy metadata
     # This ensures db.create_all() can properly handle all model relationships

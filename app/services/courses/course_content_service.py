@@ -11,7 +11,7 @@ from app import db
 from app.exceptions import ResourceNotFoundError, ValidationError
 from app.models.courses.course_lesson import CourseLesson
 from app.models.courses.lesson_content import LessonContent
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 

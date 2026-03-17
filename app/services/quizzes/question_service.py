@@ -12,7 +12,8 @@ from app.models.courses.course import Course
 from app.models.quizzes.question import Question
 from app.models.quizzes.question_option import QuestionOption
 from app.models.quizzes.quiz import Quiz
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
+from app.utils.s3_handler import S3Handler
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class QuestionService(BaseService):
         explanation: str = None,
         question_order: int = None,
         options: list = None,
+        image_url: str = None,
     ) -> dict:
         """
         Create a new question (with optional answer options) for a quiz.
@@ -58,6 +60,7 @@ class QuestionService(BaseService):
             question_order: Display order within the quiz
             options: List of {option_text, is_correct, option_order} dicts
                      (required for multiple_choice / multiple_answer / matching)
+            image_url: Optional URL to question image
 
         Returns:
             dict: Created question data including options
@@ -107,6 +110,7 @@ class QuestionService(BaseService):
                 category=category,
                 explanation=explanation,
                 question_order=question_order,
+                image_url=image_url,
             )
             db.session.add(question)
             db.session.flush()  # get question_id before adding options
@@ -251,7 +255,7 @@ class QuestionService(BaseService):
 
             allowed_fields = (
                 "question_type", "question_text", "points",
-                "difficulty", "category", "explanation", "question_order",
+                "difficulty", "category", "explanation", "question_order", "image_url",
             )
             for field, value in kwargs.items():
                 if field in allowed_fields:
@@ -283,6 +287,31 @@ class QuestionService(BaseService):
         except Exception as exc:
             db.session.rollback()
             logger.error("Error updating question %s: %s", question_id, str(exc), exc_info=True)
+            raise
+
+    @staticmethod
+    def update_question_order(question_id: str, user_id: str, user_role: str, question_order: int) -> dict:
+        """Update the display order of a question within its quiz."""
+        try:
+            if question_order < 0:
+                raise ValidationError("question_order must be a positive integer")
+
+            question = Question.query.get(question_id)
+            if not question:
+                raise ResourceNotFoundError("Question not found")
+
+            QuestionService._get_quiz_with_auth(question.quiz_id, user_id, user_role)
+
+            question.question_order = question_order
+            db.session.commit()
+            logger.info("Question %s order updated to %s by user %s", question_id, question_order, user_id)
+            return QuestionService.get_question(question_id)
+        except (ResourceNotFoundError, AuthorizationError, ValidationError):
+            db.session.rollback()
+            raise
+        except Exception as exc:
+            db.session.rollback()
+            logger.error("Error updating order for question %s: %s", question_id, str(exc), exc_info=True)
             raise
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -327,6 +356,68 @@ class QuestionService(BaseService):
             raise
 
     # ──────────────────────────────────────────────────────────────────────────
+    # Image Upload
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def upload_question_image(file_obj, quiz_id: str, question_id: str) -> str:
+        """
+        Upload an image for a question to S3.
+
+        Args:
+            file_obj: Flask FileStorage object
+            quiz_id: Quiz UUID
+            question_id: Question UUID
+
+        Returns:
+            str: S3 URL of the uploaded image
+
+        Raises:
+            Exception: If upload fails or S3 is not configured
+        """
+        try:
+            if not S3Handler.is_configured():
+                raise Exception("S3 is not configured. Image upload is not available.")
+
+            s3_handler = S3Handler()
+            
+            # Generate filename using quiz_id and question_id
+            filename = file_obj.filename
+            extension = filename.rsplit(".", 1)[1].lower() if "." in filename else "jpg"
+            
+            # S3 key structure: quizzes/{quiz_id}/questions/{question_id}/{filename}
+            s3_filename = f"{question_id}.{extension}"
+
+            # Create a new FileStorage object with the new filename
+            file_obj.filename = s3_filename
+
+            # Upload using S3Handler (modify to use custom path)
+            s3_key = f"quizzes/{quiz_id}/questions/{s3_filename}"
+            
+            # Upload directly to S3
+            file_content = file_obj.read()
+            file_obj.seek(0)
+            
+            s3_handler.s3_client.put_object(
+                Bucket=s3_handler.bucket_name,
+                Key=s3_key,
+                Body=file_content,
+                ContentType=file_obj.content_type or "image/jpeg",
+                ACL="public-read",
+            )
+
+            # Generate S3 URL
+            from flask import current_app
+            s3_url = f"https://{s3_handler.bucket_name}.s3.{current_app.config.get('AWS_S3_REGION', 'us-east-1')}.amazonaws.com/{s3_key}"
+
+            logger.info(f"Question image uploaded to S3: {s3_key}")
+            return s3_url
+
+        except Exception as e:
+            logger.error(f"Error uploading question image: {str(e)}", exc_info=True)
+            raise
+
+    # ──────────────────────────────────────────────────────────────────────────
     # Internal helpers
     # ──────────────────────────────────────────────────────────────────────────
 
@@ -337,9 +428,7 @@ class QuestionService(BaseService):
         if not quiz:
             raise ResourceNotFoundError("Quiz not found")
 
-        if user_role != "admin":
-            course = Course.query.get(quiz.course_id)
-            if not course or course.instructor_id != user_id:
-                raise AuthorizationError("Only the course instructor can manage questions")
+        if user_role != "superadmin" and quiz.user_id != user_id:
+            raise AuthorizationError("Only the course instructor can manage questions")
 
         return quiz

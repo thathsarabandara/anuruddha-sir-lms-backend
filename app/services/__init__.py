@@ -15,6 +15,6 @@ Example:
     return jsonify(data), 200
 """
 
-from app.services.health_service import HealthCheckService
+from app.services.health.health_service import HealthCheckService
 
 __all__ = ["HealthCheckService"]

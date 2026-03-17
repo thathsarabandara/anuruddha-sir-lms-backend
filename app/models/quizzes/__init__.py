@@ -9,6 +9,7 @@ from app.models.quizzes.question import Question
 from app.models.quizzes.question_option import QuestionOption
 from app.models.quizzes.quiz import Quiz
 from app.models.quizzes.quiz_attempt import QuizAttempt
+from app.models.quizzes.quiz_course import QuizCourse
 
 __all__ = [
     "Quiz",
@@ -17,4 +18,5 @@ __all__ = [
     "QuizAttempt",
     "AttemptAnswer",
     "ManualGrade",
+    "QuizCourse",
 ]

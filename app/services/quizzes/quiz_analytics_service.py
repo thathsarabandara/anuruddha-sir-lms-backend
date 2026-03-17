@@ -4,6 +4,7 @@ Provides quiz-level and question-level performance statistics for instructors.
 """
 
 import logging
+from datetime import datetime, timedelta
 
 from sqlalchemy import func
 
@@ -14,13 +15,66 @@ from app.models.quizzes.attempt_answer import AttemptAnswer
 from app.models.quizzes.question import Question
 from app.models.quizzes.quiz import Quiz
 from app.models.quizzes.quiz_attempt import QuizAttempt
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 
 logger = logging.getLogger(__name__)
 
 
 class QuizAnalyticsService(BaseService):
     """Service for quiz and question-level analytics."""
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Teacher Dashboard Statistics
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def get_teacher_dashboard_stats(user_id: str) -> dict:
+        """
+        Return quiz statistics for teacher dashboard overview.
+        
+        Includes:
+        - total_quizzes: Total number of quizzes created by this teacher
+        - published_quizzes: Number of published quizzes
+        - draft_quizzes: Number of draft quizzes
+        - quizzes_this_month: Number of quizzes created in current month
+
+        Args:
+            user_id: Teacher's user ID
+
+        Returns:
+            dict: Dictionary with 4 metrics
+        """
+        try:
+            # Get all quizzes for this teacher
+            all_quizzes = Quiz.query.filter_by(user_id=user_id).all()
+            total_quizzes = len(all_quizzes)
+
+            # Published vs Draft
+            published_quizzes = len([q for q in all_quizzes if q.is_published])
+            draft_quizzes = len([q for q in all_quizzes if not q.is_published])
+
+            # Quizzes created this month
+            now = datetime.utcnow()
+            first_day_of_month = datetime(now.year, now.month, 1)
+            quizzes_this_month = len([
+                q for q in all_quizzes 
+                if q.created_at and q.created_at >= first_day_of_month
+            ])
+
+            return {
+                "total_quizzes": total_quizzes,
+                "published_quizzes": published_quizzes,
+                "draft_quizzes": draft_quizzes,
+                "quizzes_this_month": quizzes_this_month,
+            }
+        except Exception as e:
+            logger.error(f"Error getting teacher dashboard stats: {str(e)}")
+            return {
+                "total_quizzes": 0,
+                "published_quizzes": 0,
+                "draft_quizzes": 0,
+                "quizzes_this_month": 0,
+            }
 
     # ──────────────────────────────────────────────────────────────────────────
     # Quiz-level statistics

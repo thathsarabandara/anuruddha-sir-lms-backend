@@ -1,6 +1,7 @@
 """
 File Handler Utility
-Manages file uploads with organized directory structure and consistent naming
+Manages file uploads with organized directory structure and consistent naming.
+Supports both local file system (development) and S3 (production) storage.
 """
 
 import os
@@ -10,6 +11,16 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 
 logger = logging.getLogger(__name__)
+
+
+def use_s3_storage():
+    """Check if S3 storage should be used (production environment)"""
+    return (
+        current_app.config.get("ENV") == "production"
+        and current_app.config.get("AWS_ACCESS_KEY_ID")
+        and current_app.config.get("AWS_SECRET_ACCESS_KEY")
+        and current_app.config.get("AWS_S3_BUCKET")
+    )
 
 
 class FileHandler:
@@ -145,8 +156,8 @@ class FileHandler:
         """
         Save profile picture with organized naming and directory structure.
 
-        Directory: uploads/profiles/{role}/{username}/
-        Filename: {username}_{counter}.{ext}
+        Directory (Local): uploads/profiles/{role}/{username}/
+        S3 Path (Production): profiles/{role}/{username}/
 
         Args:
             file_obj: Flask FileStorage object from request.files
@@ -154,7 +165,7 @@ class FileHandler:
             role (str): User role (student, teacher, admin, superadmin)
 
         Returns:
-            str: Relative path to saved file (for database storage)
+            str: File path (local) or S3 URL
 
         Raises:
             ValidationError: If file is invalid
@@ -167,6 +178,14 @@ class FileHandler:
             raise ValidationError(error_msg)
 
         try:
+            # Use S3 in production, local storage in development
+            if use_s3_storage():
+                from app.utils.s3_handler import S3Handler
+
+                s3_handler = S3Handler()
+                return s3_handler.upload_profile_picture(file_obj, username, role=role)
+
+            # Local file system storage (development)
             # Get upload directory
             upload_dir = FileHandler.get_upload_directory(
                 category="profiles", role=role, username=username
@@ -204,15 +223,26 @@ class FileHandler:
         """
         Save course material file.
 
+        Directory (Local): uploads/courses/{course_id}/
+        S3 Path (Production): courses/{course_id}/
+
         Args:
             file_obj: Flask FileStorage object
             course_id (str): Course ID
             filename (str): Optional custom filename
 
         Returns:
-            str: Relative path to saved file
+            str: File path (local) or S3 URL
         """
         try:
+            # Use S3 in production, local storage in development
+            if use_s3_storage():
+                from app.utils.s3_handler import S3Handler
+
+                s3_handler = S3Handler()
+                return s3_handler.upload_course_material(file_obj, course_id, filename=filename)
+
+            # Local file system storage (development)
             upload_dir = FileHandler.get_upload_directory(category="courses", role="materials")
             Path(upload_dir).mkdir(parents=True, exist_ok=True)
 
@@ -243,8 +273,11 @@ class FileHandler:
         """
         Convert relative file path to URL.
 
+        In production with S3, the path is already an S3 URL.
+        In development, convert local path to URL.
+
         Args:
-            relative_path (str): Relative path from uploads folder
+            relative_path (str): Relative path from uploads folder or S3 URL
 
         Returns:
             str: Full URL to the file
@@ -252,26 +285,41 @@ class FileHandler:
         if not relative_path:
             return None
 
-        # If it's already a full URL, return as is
+        # If it's already a full URL (S3 or other), return as is
         if relative_path.startswith(("http://", "https://")):
             return relative_path
 
-        # Convert file path to URL format
+        # Convert local file path to URL format (development)
         file_url = f"/uploads/{relative_path.replace(os.sep, '/')}"
         return file_url
 
     @staticmethod
     def delete_file(relative_path):
         """
-        Delete a file from uploads.
+        Delete a file from local storage or S3.
 
         Args:
-            relative_path (str): Relative path from uploads folder
+            relative_path (str): Relative path from uploads folder or S3 key
 
         Returns:
             bool: True if deleted, False otherwise
         """
         try:
+            # Check if it's an S3 URL
+            if relative_path.startswith(("http://", "https://")):
+                # Extract S3 key from URL (path after bucket name)
+                if "amazonaws.com/" in relative_path:
+                    s3_key = relative_path.split("amazonaws.com/", 1)[1]
+                    if use_s3_storage():
+                        from app.utils.s3_handler import S3Handler
+
+                        s3_handler = S3Handler()
+                        return s3_handler.delete_file(s3_key)
+                # If it's another URL type, we can't delete it
+                logger.warning(f"Cannot delete external URL: {relative_path}")
+                return False
+
+            # Local file system deletion
             file_path = os.path.join(
                 current_app.config.get("UPLOAD_FOLDER", "uploads"), relative_path
             )

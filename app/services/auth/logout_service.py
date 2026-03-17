@@ -9,7 +9,7 @@ from datetime import datetime
 from app import db
 from app.exceptions import AuthenticationError
 from app.models.auth import AccessToken, LoginHistory, RefreshToken
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.utils.auth import SessionManager
 
 logger = logging.getLogger(__name__)

@@ -12,7 +12,7 @@ from flask import current_app
 from app import db
 from app.exceptions import AuthenticationError, ValidationError
 from app.models.auth import OTPRequest, User
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.utils.auth import OTPManager, PasswordManager, SessionManager
 
 logger = logging.getLogger(__name__)

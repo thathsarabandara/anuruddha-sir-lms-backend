@@ -10,7 +10,7 @@ from flask import current_app
 from app import config, db
 from app.exceptions import ValidationError
 from app.models.auth import OTPRequest, User
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.services.notifications.notification_service import NotificationService
 from app.utils.auth import OTPManager, PasswordManager, SessionManager, TokenManager
 

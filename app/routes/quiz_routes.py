@@ -4,42 +4,47 @@ All quiz-related API endpoints organized by resource type.
 
 Endpoint map:
   Quiz Management (CRUD)
-    POST   /api/v1/courses/<course_id>/quizzes               - Create quiz
-    GET    /api/v1/courses/<course_id>/quizzes               - List quizzes for course
-    GET    /api/v1/quizzes/<quiz_id>                         - Get quiz details
-    PUT    /api/v1/quizzes/<quiz_id>                         - Update quiz
-    DELETE /api/v1/quizzes/<quiz_id>                         - Delete quiz
+    POST   /api/v1/quiz                                   - Create quiz (optional course assignment)
+    GET    /api/v1/quiz                                   - List quizzes
+    GET    /api/v1/quiz/<course_id>                       - List quizzes for courses
+    GET    /api/v1/quiz/detail/<quiz_id>                  - Get quiz details
+    PUT    /api/v1/quiz/update/<quiz_id>                  - Update quiz
+    DELETE /api/v1/quiz/delete/<quiz_id>                  - Delete quiz
+
+  Quiz-Course Assignment
+    POST   /api/v1/quiz/courses/assign                    - Assign courses to quiz
+    POST   /api/v1/quiz/courses/remove                    - Remove courses from quiz
 
   Question Management
-    POST   /api/v1/quizzes/<quiz_id>/questions               - Create question
-    GET    /api/v1/quizzes/<quiz_id>/questions               - Get quiz questions
-    PUT    /api/v1/questions/<question_id>                   - Update question
-    DELETE /api/v1/questions/<question_id>                   - Delete question
+    POST   /api/v1/quiz/questions                         - Create question (single or batch)
+    GET    /api/v1/quiz/questions                         - Get quiz questions
+    PUT    /api/v1/quiz/update/questions                  - Update question
+    PUT    /api/v1/quiz/questions/order                   - Update question order (single or batch)
+    DELETE /api/v1/quiz/delete/questions                  - Delete question
 
   Quiz Attempt Endpoints
-    POST   /api/v1/quizzes/<quiz_id>/attempts               - Start quiz attempt
-    POST   /api/v1/attempts/<attempt_id>/answers            - Save/update answer
-    POST   /api/v1/attempts/<attempt_id>/submit             - Submit quiz
-    GET    /api/v1/quizzes/<quiz_id>/results                - Get quiz results (student)
+    POST   /api/v1/quiz/attempts                          - Start quiz attempt
+    POST   /api/v1/quiz/submit/answers/<attempt_id>       - Save/update answer
+    POST   /api/v1/quiz/attempts/<attempt_id>/submit      - Submit quiz
+    GET    /api/v1/quiz/results                           - Get all answered quizzes (student)
+    GET    /api/v1/quiz/<quiz_id>/results                 - Get quiz results (student)
 
   Grading Endpoints
-    POST   /api/v1/answers/<answer_id>/grade                - Grade essay answer
-    GET    /api/v1/quizzes/<quiz_id>/submissions/<user_id>  - Get submission for grading
+    POST   /api/v1/quiz/answers/<answer_id>/grade         - Grade essay answer
+    GET    /api/v1/quiz/<quiz_id>/submissions/<user_id>   - Get submission for grading
 
   Analytics Endpoints
-    GET    /api/v1/quizzes/<quiz_id>/statistics             - Quiz statistics (instructor)
-    GET    /api/v1/questions/<question_id>/analytics        - Question analytics
+    GET    /api/v1/quiz/dashboard/teacher-stats           - Teacher dashboard statistics
+    GET    /api/v1/quiz/<quiz_id>/statistics              - Quiz statistics (instructor)
+    GET    /api/v1/quiz/questions/<question_id>/analytics - Question analytics
 """
+
+from venv import logger
 
 from flask import Blueprint, request
 
-from app.exceptions import (
-    AuthorizationError,
-    ConflictError,
-    ResourceNotFoundError,
-    ValidationError,
-)
 from app.middleware.auth_middleware import require_auth, require_role
+from app.models.quizzes.question import Question
 from app.services.quizzes import (
     QuizAnalyticsService,
     QuizAnswerService,
@@ -51,7 +56,7 @@ from app.services.quizzes import QuestionService
 from app.utils.decorators import handle_exceptions
 from app.utils.response import error_response, success_response
 
-bp = Blueprint("quizzes", __name__, url_prefix="/api/v1")
+bp = Blueprint("quizzes", __name__, url_prefix="/api/v1/quiz")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -72,35 +77,49 @@ def _handle_lms_error(e: Exception):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@bp.route("/courses/<course_id>/quizzes", methods=["POST"])
+@bp.route("/", methods=["POST"])
 @handle_exceptions
 @require_auth
-@require_role("teacher", "admin")
-def create_quiz(course_id):
+@require_role("teacher", "admin", "superadmin")
+def create_quiz():
     """
-    Create a new quiz for a course.
-    Requires: Teacher or Admin role. Requesting user must be the course instructor.
-
-    URL Params:
-        course_id (str): UUID of the target course
+    Create a new quiz with optional course assignments.
+    Requires: Teacher or Admin role.
+    
+    A quiz can be assigned to one or more courses, or created without any course.
 
     Request Body:
-        title (required), description, passing_score, duration_minutes,
-        max_attempts, show_answers_after, shuffle_questions, shuffle_answers,
-        available_from, available_until
+        title (required): Quiz title
+        description: Quiz description
+        passing_score: Passing score percentage (0-100, default 70)
+        duration_minutes: Time limit in minutes
+        max_attempts: Maximum attempts allowed (default 1)
+        show_answers_after: When to show answers (submission|later|never)
+        shuffle_questions: Boolean, randomize question order
+        shuffle_answers: Boolean, randomize answer options
+        available_from: Quiz availability start (ISO timestamp or various formats)
+        available_until: Quiz availability end (ISO timestamp or various formats)
+        course_ids: Optional - single course_id (string) or array of course_ids
 
     Returns:
-        201: Created quiz data (quiz_id, course_id, title, created_at)
+        201: Created quiz data (quiz_id, title, course_ids, created_at)
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
 
         if not data.get("title"):
             return error_response("title is required", 400)
 
+        # Handle course_ids - can be string or list
+        course_ids = data.get("course_ids")
+        if isinstance(course_ids, str):
+            course_ids = [course_ids] if course_ids else None
+
         quiz = QuizService.create_quiz(
-            course_id=course_id,
-            instructor_id=request.user_id,
+            user_id=request.user_id,
             title=data["title"],
             description=data.get("description"),
             passing_score=data.get("passing_score", 70),
@@ -111,6 +130,7 @@ def create_quiz(course_id):
             shuffle_answers=data.get("shuffle_answers", False),
             available_from=data.get("available_from"),
             available_until=data.get("available_until"),
+            course_ids=course_ids,
         )
         return success_response(data=quiz, message="Quiz created successfully", status_code=201)
 
@@ -118,9 +138,32 @@ def create_quiz(course_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/courses/<course_id>/quizzes", methods=["GET"])
+@bp.route("/", methods=["GET"])
 @handle_exceptions
 @require_auth
+@require_role("teacher", "admin", "superadmin")
+def list_all_quizzes():
+    """
+    List all quizzes in the system.
+    Requires: Authenticated user (typically for admin/instructor overview).
+
+    Returns:
+        200: List of all quiz data
+    """
+    try:
+        quizzes = QuizService.get_all_quizzes(
+            user_id=request.user_id
+        )
+        return success_response(data=quizzes, message="Quizzes retrieved successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin", "superadmin")
 def list_quizzes(course_id):
     """
     List all quizzes for a course.
@@ -133,22 +176,30 @@ def list_quizzes(course_id):
         200: List of quiz data
     """
     try:
-        quizzes = QuizService.get_quizzes_for_course(course_id)
+        course_id = request.args.get("course_id") or course_id
+        quizzes = QuizService.get_quizzes_for_course(
+            course_id,
+            user_id=request.user_id,
+        )
         return success_response(data=quizzes, message="Quizzes retrieved successfully")
 
     except Exception as e:
+        response = {
+            "status": "error",
+            "message": "Failed to retrieve quizzes",
+        }
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>", methods=["GET"])
+@bp.route("/details", methods=["GET"])
 @handle_exceptions
 @require_auth
-def get_quiz(quiz_id):
+def get_quiz_details():
     """
     Get detailed information for a specific quiz.
     Requires: Authenticated user (enrolled students or instructor).
 
-    URL Params:
+    Query Params:
         quiz_id (str): Quiz UUID
 
     Returns:
@@ -156,17 +207,24 @@ def get_quiz(quiz_id):
         404: Quiz not found
     """
     try:
-        quiz = QuizService.get_quiz(quiz_id)
+        quiz_id = request.args.get("quiz_id")
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        
+        quiz = QuizService.get_quiz(
+            quiz_id=quiz_id,
+        )
         return success_response(data=quiz, message="Quiz retrieved successfully")
 
     except Exception as e:
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>", methods=["PUT"])
+@bp.route("/update", methods=["PUT"])
 @handle_exceptions
 @require_auth
-def update_quiz(quiz_id):
+@require_role("teacher", "admin", "superadmin")
+def update_quiz():
     """
     Update quiz fields. Only the course instructor or admin may update.
 
@@ -182,7 +240,12 @@ def update_quiz(quiz_id):
         404: Quiz not found
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
+        quiz_id = request.args.get("quiz_id") or quiz_id
         quiz = QuizService.update_quiz(
             quiz_id=quiz_id,
             user_id=request.user_id,
@@ -195,10 +258,10 @@ def update_quiz(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>", methods=["DELETE"])
+@bp.route("/delete", methods=["DELETE"])
 @handle_exceptions
 @require_auth
-def delete_quiz(quiz_id):
+def delete_quiz():
     """
     Delete a quiz (cascades to questions, attempts, answers).
     Only the course instructor or admin may delete.
@@ -212,6 +275,8 @@ def delete_quiz(quiz_id):
         404: Quiz not found
     """
     try:
+        quiz_id = request.args.get("quiz_id")
+
         QuizService.delete_quiz(
             quiz_id=quiz_id,
             user_id=request.user_id,
@@ -223,90 +288,302 @@ def delete_quiz(quiz_id):
         return _handle_lms_error(e)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Question Management Endpoints (endpoints 5-8)
-# ══════════════════════════════════════════════════════════════════════════════
-
-
-@bp.route("/quizzes/<quiz_id>/questions", methods=["POST"])
+@bp.route("/courses/assign", methods=["POST"])
 @handle_exceptions
 @require_auth
-def create_question(quiz_id):
+@require_role("teacher", "admin", "superadmin")
+def assign_courses_to_quiz():
     """
-    Create a new question (with options) for a quiz.
-    Only the course instructor or admin may create questions.
-
-    URL Params:
-        quiz_id (str): Quiz UUID
+    Assign one or multiple courses to a quiz.
+    Only the quiz creator or admin may assign.
 
     Request Body:
-        question_type (required): multiple_choice | multiple_answer | short_answer |
-                                   essay | matching | fill_blank
-        question_text (required): Question content
-        points: Points for correct answer (default 1)
-        difficulty: easy | medium | hard
-        category: Optional category label
-        explanation: Optional explanation shown after submission
-        question_order: Optional display ordering
-        options: List of {option_text, is_correct, option_order} — required for
-                 multiple_choice, multiple_answer, matching
+        quiz_id (required): Quiz UUID
+        course_ids: Single course_id (string) or array of course_ids
 
     Returns:
-        201: Created question data with options
-        400: Validation error
+        200: Updated quiz data with assigned courses
+        400: Missing required fields or validation error
         403: Not authorized
-        404: Quiz not found
+        404: Quiz or course not found
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
 
-        if not data.get("question_type"):
-            return error_response("question_type is required", 400)
-        if not data.get("question_text"):
-            return error_response("question_text is required", 400)
+        quiz_id = data.get("quiz_id")
+        course_ids = data.get("course_ids")
 
-        question = QuestionService.create_question(
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        if not course_ids:
+            return error_response("course_ids is required (string or array)", 400)
+
+        # Convert single course_id to array
+        if isinstance(course_ids, str):
+            course_ids = [course_ids]
+
+        quiz = QuizService.assign_courses_to_quiz(
             quiz_id=quiz_id,
+            course_ids=course_ids,
             user_id=request.user_id,
             user_role=request.user_role,
-            question_type=data["question_type"],
-            question_text=data["question_text"],
-            points=data.get("points", 1),
-            difficulty=data.get("difficulty", "medium"),
-            category=data.get("category"),
-            explanation=data.get("explanation"),
-            question_order=data.get("question_order"),
-            options=data.get("options"),
         )
-        return success_response(data=question, message="Question created successfully", status_code=201)
+        return success_response(data=quiz, message="Courses assigned to quiz successfully")
 
     except Exception as e:
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>/questions", methods=["GET"])
+@bp.route("/courses/remove", methods=["POST"])
 @handle_exceptions
 @require_auth
-def get_quiz_questions(quiz_id):
+@require_role("teacher", "admin", "superadmin")
+def remove_courses_from_quiz():
+    """
+    Remove one or multiple courses from a quiz.
+    Only the quiz creator or admin may remove.
+
+    Request Body:
+        quiz_id (required): Quiz UUID
+        course_ids: Single course_id (string) or array of course_ids to remove
+
+    Returns:
+        200: Updated quiz data with remaining assigned courses
+        400: Missing required fields or validation error
+        403: Not authorized
+        404: Quiz not found
+    """
+    try:
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
+        quiz_id = data.get("quiz_id")
+        course_ids = data.get("course_ids")
+
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        if not course_ids:
+            return error_response("course_ids is required (string or array)", 400)
+
+        # Convert single course_id to array
+        if isinstance(course_ids, str):
+            course_ids = [course_ids]
+
+        quiz = QuizService.remove_courses_from_quiz(
+            quiz_id=quiz_id,
+            course_ids=course_ids,
+            user_id=request.user_id,
+            user_role=request.user_role,
+        )
+        return success_response(data=quiz, message="Courses removed from quiz successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Question Management Endpoints (endpoints 5-8)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/questions", methods=["POST"])
+@handle_exceptions
+@require_auth
+def create_question():
+    """
+    Create one or multiple questions (with options) for a quiz.
+    Only the course instructor or admin may create questions.
+
+    Query/Body Params:
+        quiz_id (str): Quiz UUID (can be in query or body)
+
+    Request Body:
+        Single question format:
+            {
+                "question_type": "multiple_choice|multiple_answer|short_answer|essay|matching|fill_blank",
+                "question_text": "Question content",
+                "points": 1 (optional, default 1),
+                "difficulty": "easy|medium|hard" (optional, default medium),
+                "category": "string" (optional),
+                "explanation": "string" (optional),
+                "question_order": int (optional),
+                "image_url": "string" (optional, S3 URL or provide image file),
+                "image": file (optional, multipart/form-data file upload),
+                "options": [{option_text, is_correct, option_order}] (optional)
+            }
+        
+        Batch format (array):
+            [
+                { question object 1 },
+                { question object 2 },
+                ...
+            ]
+
+    Returns:
+        201: Created question data (single or array)
+        400: Validation error
+        403: Not authorized
+        404: Quiz not found
+    """
+    try:
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.form.to_dict() or {}
+
+        quiz_id = request.args.get("quiz_id") or data.get("quiz_id")
+
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+
+        # Check if it's a batch request (array of questions)
+        if isinstance(data, list):
+            questions = []
+            for q_data in data:
+                if not q_data.get("question_type"):
+                    return error_response("question_type is required for all questions", 400)
+                if not q_data.get("question_text"):
+                    return error_response("question_text is required for all questions", 400)
+
+                question = QuestionService.create_question(
+                    quiz_id=quiz_id,
+                    user_id=request.user_id,
+                    user_role=request.user_role,
+                    question_type=q_data["question_type"],
+                    question_text=q_data["question_text"],
+                    points=q_data.get("points", 1),
+                    difficulty=q_data.get("difficulty", "medium"),
+                    category=q_data.get("category"),
+                    explanation=q_data.get("explanation"),
+                    question_order=q_data.get("question_order"),
+                    image_url=q_data.get("image_url"),
+                    options=q_data.get("options"),
+                )
+                questions.append(question)
+            
+            return success_response(
+                data=questions,
+                message=f"Successfully created {len(questions)} questions",
+                status_code=201
+            )
+        else:
+            # Single question request
+            if not data.get("question_type"):
+                return error_response("question_type is required", 400)
+            if not data.get("question_text"):
+                return error_response("question_text is required", 400)
+
+            # Handle image upload if provided
+            image_url = data.get("image_url")
+            if "image" in request.files:
+                image_file = request.files.get("image")
+                if image_file and image_file.filename:
+                    try:
+                        # Validate file
+                        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                        if '.' in image_file.filename:
+                            file_ext = image_file.filename.rsplit('.', 1)[1].lower()
+                            if file_ext not in allowed_extensions:
+                                return error_response(
+                                    f"Invalid image format. Allowed: {', '.join(allowed_extensions)}", 400
+                                )
+                        
+                        # Create a temporary question first to get the question_id for S3 path
+                        temp_question = QuestionService.create_question(
+                            quiz_id=quiz_id,
+                            user_id=request.user_id,
+                            user_role=request.user_role,
+                            question_type=data["question_type"],
+                            question_text=data["question_text"],
+                            points=data.get("points", 1),
+                            difficulty=data.get("difficulty", "medium"),
+                            category=data.get("category"),
+                            explanation=data.get("explanation"),
+                            question_order=data.get("question_order"),
+                            options=data.get("options"),
+                        )
+                        
+                        # Upload the image to S3
+                        image_url = QuestionService.upload_question_image(
+                            image_file, quiz_id, temp_question["question_id"]
+                        )
+                        
+                        # Update the question with the image URL
+                        updated_question = QuestionService.update_question(
+                            question_id=temp_question["question_id"],
+                            user_id=request.user_id,
+                            user_role=request.user_role,
+                            image_url=image_url,
+                        )
+                        return success_response(data=updated_question, message="Question created successfully with image", status_code=201)
+                    except Exception as e:
+                        return error_response(f"Image upload failed: {str(e)}", 400)
+
+            question = QuestionService.create_question(
+                quiz_id=quiz_id,
+                user_id=request.user_id,
+                user_role=request.user_role,
+                question_type=data["question_type"],
+                question_text=data["question_text"],
+                points=data.get("points", 1),
+                difficulty=data.get("difficulty", "medium"),
+                category=data.get("category"),
+                explanation=data.get("explanation"),
+                question_order=data.get("question_order"),
+                image_url=image_url,
+                options=data.get("options"),
+            )
+            return success_response(data=question, message="Question created successfully", status_code=201)
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/questions", methods=["GET"])
+@handle_exceptions
+@require_auth
+def get_quiz_questions():
     """
     Retrieve all questions for a quiz.
+    Only accessible to:
+    - Quiz instructor/admin
+    - Students who have started an attempt on this quiz
+    
     Instructors/admins receive is_correct on options.
     Students receive questions without correct-answer indicators.
 
-    URL Params:
-        quiz_id (str): Quiz UUID
-
     Query Params:
+        quiz_id (str): Quiz UUID (required)
         include_answers (bool): Include is_correct flag (instructor/admin only)
 
     Returns:
         200: List of question objects with options
+        403: User has not started an attempt (students only)
+        400: quiz_id is required
     """
     try:
-        # Only instructors/admins may see correct answers
+        quiz_id = request.args.get("quiz_id")
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+        
+        if request.user_role == "student":
+            from app.models.quizzes.quiz_attempt import QuizAttempt
+            attempt = QuizAttempt.query.filter_by(
+                quiz_id=quiz_id,
+                user_id=request.user_id
+            ).first()
+            
+            if not attempt:
+                return error_response("You must start a quiz attempt before viewing questions", 403)
+
         include_answers = False
-        if request.user_role in ("teacher", "admin"):
-            include_answers = request.args.get("include_answers", "false").lower() == "true"
+        if request.user_role in ("teacher", "admin", "superadmin"):
+            include_answers = True
 
         questions = QuestionService.get_quiz_questions(quiz_id, include_answers=include_answers)
         return success_response(data=questions, message="Questions retrieved successfully")
@@ -315,10 +592,11 @@ def get_quiz_questions(quiz_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/questions/<question_id>", methods=["PUT"])
+@bp.route("/update/questions", methods=["PUT"])
 @handle_exceptions
 @require_auth
-def update_question(question_id):
+@require_role("teacher", "admin", "superadmin")
+def update_question():
     """
     Update a question and optionally replace its options.
     Only the course instructor or admin may update.
@@ -328,6 +606,7 @@ def update_question(question_id):
 
     Request Body:
         Any updatable question fields; include 'options' list to replace options.
+        Can also include 'image' file (multipart/form-data) to upload a new image.
 
     Returns:
         200: Updated question data
@@ -335,7 +614,47 @@ def update_question(question_id):
         404: Question not found
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.form.to_dict() or {}
+
+        question_id = request.args.get("question_id") or data.get("question_id")
+        
+        if not question_id:
+            return error_response("question_id is required", 400)
+
+        # Handle image upload if provided
+        if "image" in request.files:
+            image_file = request.files.get("image")
+            if image_file and image_file.filename:
+                try:
+                    # Get the question to extract quiz_id
+                    question_obj = Question.query.get(question_id)
+                    if not question_obj:
+                        return error_response("Question not found", 404)
+                    
+                    quiz_id = question_obj.quiz_id
+                    
+                    # Validate file
+                    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                    if '.' in image_file.filename:
+                        file_ext = image_file.filename.rsplit('.', 1)[1].lower()
+                        if file_ext not in allowed_extensions:
+                            return error_response(
+                                f"Invalid image format. Allowed: {', '.join(allowed_extensions)}", 400
+                            )
+                    
+                    # Upload the image to S3
+                    image_url = QuestionService.upload_question_image(
+                        image_file, quiz_id, question_id
+                    )
+                    
+                    # Set the image_url in the data
+                    data["image_url"] = image_url
+                except Exception as e:
+                    return error_response(f"Image upload failed: {str(e)}", 400)
+
         question = QuestionService.update_question(
             question_id=question_id,
             user_id=request.user_id,
@@ -348,10 +667,10 @@ def update_question(question_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/questions/<question_id>", methods=["DELETE"])
+@bp.route("/delete/questions", methods=["DELETE"])
 @handle_exceptions
 @require_auth
-def delete_question(question_id):
+def delete_question():
     """
     Delete a question (cascades to its options and attempt answers).
     Only the course instructor or admin may delete.
@@ -365,6 +684,7 @@ def delete_question(question_id):
         404: Question not found
     """
     try:
+        question_id = request.args.get("question_id")
         QuestionService.delete_question(
             question_id=question_id,
             user_id=request.user_id,
@@ -376,21 +696,115 @@ def delete_question(question_id):
         return _handle_lms_error(e)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Quiz Attempt Endpoints (endpoints 9-12)
-# ══════════════════════════════════════════════════════════════════════════════
-
-
-@bp.route("/quizzes/<quiz_id>/attempts", methods=["POST"])
+@bp.route("/questions/order", methods=["PUT"])
 @handle_exceptions
 @require_auth
-def start_quiz_attempt(quiz_id):
+@require_role("teacher", "admin", "superadmin")
+def update_question_order():
+    """
+    Update the display order of one or multiple questions within a quiz.
+    Only the course instructor or admin may update.
+
+    Request Body (Single):
+        {
+            "question_id": "question_uuid",
+            "question_order": 3
+        }
+
+    Request Body (Batch):
+        [
+            {"question_id": "question_uuid_1", "question_order": 1},
+            {"question_id": "question_uuid_2", "question_order": 2},
+            {"question_id": "question_uuid_3", "question_order": 3}
+        ]
+
+    Returns:
+        200: Updated question(s) with new order
+        400: Invalid or missing question_order / question_id
+        403: Not authorized
+        404: Question not found
+    """
+    try:
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+
+        # Handle batch request (array of questions)
+        if isinstance(data, list):
+            updated_questions = []
+            for q_data in data:
+                question_id = q_data.get("question_id")
+                question_order = q_data.get("question_order")
+
+                if not question_id:
+                    return error_response("question_id is required for all questions", 400)
+                if question_order is None:
+                    return error_response("question_order is required for all questions", 400)
+
+                try:
+                    question_order = int(question_order)
+                except (ValueError, TypeError):
+                    return error_response("question_order must be an integer", 400)
+
+                if question_order < 0:
+                    return error_response("question_order must be a positive integer", 400)
+
+                question = QuestionService.update_question_order(
+                    question_id=question_id,
+                    user_id=request.user_id,
+                    user_role=request.user_role,
+                    question_order=question_order,
+                )
+                updated_questions.append(question)
+
+            return success_response(
+                data=updated_questions,
+                message=f"Successfully updated order for {len(updated_questions)} questions"
+            )
+        else:
+            # Single question request
+            question_id = data.get("question_id")
+            question_order = data.get("question_order")
+
+            if not question_id:
+                return error_response("question_id is required", 400)
+            if question_order is None:
+                return error_response("question_order is required", 400)
+
+            try:
+                question_order = int(question_order)
+            except (ValueError, TypeError):
+                return error_response("question_order must be an integer", 400)
+
+            if question_order < 0:
+                return error_response("question_order must be a positive integer", 400)
+
+            question = QuestionService.update_question(
+                question_id=question_id,
+                user_id=request.user_id,
+                user_role=request.user_role,
+                question_order=question_order,
+            )
+            return success_response(data=question, message="Question order updated successfully")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+# ==========================================================================
+# Quiz Attempt Endpoints (endpoints 9-12)
+# ===========================================================================
+
+@bp.route("/attempts", methods=["POST"])
+@handle_exceptions
+@require_auth
+def start_quiz_attempt():
     """
     Start a new quiz attempt for the authenticated student.
     Validates enrollment, availability window, and attempt limits.
 
-    URL Params:
-        quiz_id (str): Quiz UUID
+    Request Body:
+        quiz_id (required, str): Quiz UUID
 
     Returns:
         201: Attempt data with shuffled question list and optional expires_at
@@ -399,23 +813,35 @@ def start_quiz_attempt(quiz_id):
         422: Quiz not yet available or expired
     """
     try:
+        quiz_id = request.args.get("quiz_id")
+
+        course_id = request.args.get("course_id") 
+
+        if not quiz_id:
+            return error_response("quiz_id is required", 400)
+
         ip_address = request.remote_addr
         attempt = QuizAttemptService.start_attempt(
             quiz_id=quiz_id,
             user_id=request.user_id,
             user_role=request.user_role,
             ip_address=ip_address,
+            course_id=course_id,
         )
         return success_response(data=attempt, message="Quiz attempt started", status_code=201)
 
     except Exception as e:
-        return _handle_lms_error(e)
+        respone = {
+            "status": "error",
+            "message": "Failed to start quiz attempt" + str(e),
+        }
+        return respone
 
 
-@bp.route("/attempts/<attempt_id>/answers", methods=["POST"])
+@bp.route("/submit/answers", methods=["POST"])
 @handle_exceptions
 @require_auth
-def save_answer(attempt_id):
+def save_answer():
     """
     Save (or update) a student's answer for a single question.
     Can be called multiple times per question to auto-save progress.
@@ -434,8 +860,13 @@ def save_answer(attempt_id):
         409: Quiz already submitted or time expired
     """
     try:
-        data = request.get_json() or {}
+        if request.is_json:
+            data = request.get_json() or {}
+        else:
+            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
 
+        attempt_id = request.args.get("attempt_id")
+        
         if not data.get("question_id"):
             return error_response("question_id is required", 400)
         if data.get("answer") is None:
@@ -482,7 +913,26 @@ def submit_quiz(attempt_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>/results", methods=["GET"])
+@bp.route("/results", methods=["GET"])
+@handle_exceptions
+@require_auth
+def get_all_student_results():
+    """
+    Get all completed/graded quiz attempts for the authenticated student across all quizzes.
+
+    Returns:
+        200: List of attempt summaries organized by quiz
+             [{ quiz_id, quiz_title, attempts: [...] }, ...]
+    """
+    try:
+        attempts = QuizAttemptService.get_all_student_attempts(user_id=request.user_id)
+        return success_response(data={"attempts": attempts}, message="All quiz results retrieved")
+
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/<quiz_id>/results", methods=["GET"])
 @handle_exceptions
 @require_auth
 def get_quiz_results(quiz_id):
@@ -553,7 +1003,7 @@ def grade_answer(answer_id):
         return _handle_lms_error(e)
 
 
-@bp.route("/quizzes/<quiz_id>/submissions/<user_id>", methods=["GET"])
+@bp.route("/<quiz_id>/submissions/<user_id>", methods=["GET"])
 @handle_exceptions
 @require_auth
 @require_role("teacher", "admin")
@@ -588,7 +1038,35 @@ def get_submission_for_grading(quiz_id, user_id):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-@bp.route("/quizzes/<quiz_id>/statistics", methods=["GET"])
+@bp.route("/dashboard/teacher-stats", methods=["GET"])
+@handle_exceptions
+@require_auth
+@require_role("teacher", "admin", "superadmin")
+def get_teacher_dashboard_stats():
+    """
+    Get teacher dashboard statistics overview.
+    Requires: Teacher, Admin, or Superadmin role.
+
+    Returns:
+        200: Dashboard statistics with 4 metrics:
+             - total_quizzes: Total number of quizzes
+             - published_quizzes: Number of published quizzes
+             - draft_quizzes: Number of draft quizzes
+             - quizzes_this_month: Quizzes created in current month
+    """
+    try:
+        stats = QuizAnalyticsService.get_teacher_dashboard_stats(
+            user_id=request.user_id
+        )
+        return success_response(
+            data=stats,
+            message="Teacher dashboard statistics retrieved successfully"
+        )
+    except Exception as e:
+        return _handle_lms_error(e)
+
+
+@bp.route("/<quiz_id>/statistics", methods=["GET"])
 @handle_exceptions
 @require_auth
 @require_role("teacher", "admin")

@@ -20,7 +20,7 @@ from app.models.auth.role import Role
 from app.models.auth.user_role import UserRole
 from app.models.users.student_profile import StudentProfile
 from app.models.users.teacher_profile import TeacherProfile
-from app.services.base_service import BaseService
+from app.services.health.base_service import BaseService
 from app.services.notifications.notification_service import NotificationService
 from app.utils.auth import OTPManager, PasswordManager, SessionManager
 from app.utils.file_handler import FileHandler
@@ -97,18 +97,23 @@ class RegistrationService(BaseService):
                 username = f"{first_name.lower()}_{user_id[-4:]}"
 
             # ── Handle profile picture upload ──────────────────────────────
-            final_profile_picture = profile_picture
-            if not profile_picture:
+            final_profile_picture = None
+            if profile_picture:
                 try:
-                    # Save uploaded profile picture
-                    relative_path = FileHandler.save_profile_picture(
-                        profile_picture, username, role=role
-                    )
-                    # Convert to URL format
-                    final_profile_picture = FileHandler.get_file_url(relative_path)
-                    logger.info(f"Profile picture uploaded for user {username}: {relative_path}")
+                    # profile_picture can be either a FileStorage object or a URL string
+                    if hasattr(profile_picture, 'save'):
+                        # It's a file object (FileStorage)
+                        relative_path = FileHandler.save_profile_picture(
+                            profile_picture, username, role=role
+                        )
+                        final_profile_picture = FileHandler.get_file_url(relative_path)
+                        logger.info(f"Profile picture uploaded for user {username}: {relative_path}")
+                    elif isinstance(profile_picture, str):
+                        # It's a URL string, use as is
+                        final_profile_picture = profile_picture
+                        logger.info(f"Profile picture URL set for user {username}: {profile_picture}")
                 except Exception as e:
-                    logger.warning(f"Failed to save profile picture: {str(e)}. Continuing without picture.")
+                    logger.warning(f"Failed to process profile picture: {str(e)}. Continuing without picture.")
                     # Don't fail registration if picture upload fails
                     final_profile_picture = None
 

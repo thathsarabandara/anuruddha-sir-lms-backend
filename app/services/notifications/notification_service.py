@@ -1330,3 +1330,87 @@ class NotificationService:
             'support_url': support_url,
         }
         return self._send_notification('teacher_welcome_first_approval', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_student_account_created(self, user_id, username, temporary_password, email, login_url=None, support_email=None, support_phone=None, message_type=None, priority=None, channels=None):
+        """
+        Send student_account_created notification for new student account creation.
+        Variables: username, temporary_password, email, login_url, support_email, support_phone
+        """
+        # Derive defaults if not provided
+        frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        login_url = login_url or f"{frontend_url}/login"
+        support_email = support_email or current_app.config.get("SUPPORT_EMAIL", "support@example.com")
+        support_phone = support_phone or current_app.config.get("SUPPORT_PHONE", "+1-800-000-0000")
+        
+        variables = {
+            'username': username,
+            'temporary_password': temporary_password,
+            'email': email,
+            'login_url': login_url,
+            'support_email': support_email,
+            'support_phone': support_phone,
+        }
+        return self._send_notification('student_account_created', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_student_password_reset(self, user_id, username, temporary_password, email, login_url=None, support_email=None, support_phone=None, message_type=None, priority=None, channels=None):
+        """
+        Send student_password_reset notification for password reset.
+        Variables: username, temporary_password, email, login_url, support_email, support_phone
+        """
+        # Derive defaults if not provided
+        frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        login_url = login_url or f"{frontend_url}/login"
+        support_email = support_email or current_app.config.get("FRONTEND_URL", "support@example.com")
+        support_phone = support_phone or current_app.config.get("FRONTEND_URL", "+1-800-000-0000")
+        
+        variables = {
+            'username': username,
+            'temporary_password': temporary_password,
+            'email': email,
+            'login_url': login_url,
+            'support_email': support_email,
+            'support_phone': support_phone,
+        }
+        return self._send_notification('student_password_reset', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_teacher_account_created(self, user_id, username, temporary_password, email, login_url=None, support_email=None, support_phone=None, message_type=None, priority=None, channels=None):
+        """
+        Send teacher_account_created notification for new teacher/instructor account creation.
+        Variables: username, temporary_password, email, login_url, support_email, support_phone
+        """
+        # Derive defaults if not provided
+        frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        login_url = login_url or f"{frontend_url}/login"
+        support_email = support_email or current_app.config.get("FRONTEND_URL", "support@example.com")
+        support_phone = support_phone or current_app.config.get("FRONTEND_URL", "+1-800-000-0000")
+        
+        variables = {
+            'username': username,
+            'temporary_password': temporary_password,
+            'email': email,
+            'login_url': login_url,
+            'support_email': support_email,
+            'support_phone': support_phone,
+        }
+        return self._send_notification('teacher_account_created', user_id, variables, message_type=message_type, priority=priority, channels=channels)
+
+    def send_teacher_password_reset(self, user_id, username, temporary_password, email, login_url=None, support_email=None, support_phone=None, message_type=None, priority=None, channels=None):
+        """
+        Send teacher_password_reset notification for instructor password reset.
+        Variables: username, temporary_password, email, login_url, support_email, support_phone
+        """
+        # Derive defaults if not provided
+        frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        login_url = login_url or f"{frontend_url}/login"
+        support_email = support_email or current_app.config.get("FRONTEND_URL", "support@example.com")
+        support_phone = support_phone or current_app.config.get("FRONTEND_URL", "+1-800-000-0000")
+        
+        variables = {
+            'username': username,
+            'temporary_password': temporary_password,
+            'email': email,
+            'login_url': login_url,
+            'support_email': support_email,
+            'support_phone': support_phone,
+        }
+        return self._send_notification('teacher_password_reset', user_id, variables, message_type=message_type, priority=priority, channels=channels)

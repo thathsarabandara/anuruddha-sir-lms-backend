@@ -50,7 +50,7 @@ def configure_cors(app, origins=None):
                 "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
                 "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
                 "expose_headers": ["Content-Range", "X-Content-Range", "X-Total-Count"],
-                "supports_credentials": True,  # CRITICAL: Enables Access-Control-Allow-Credentials: true
+                "supports_credentials": True,  
                 "max_age": 3600,
             }
         },

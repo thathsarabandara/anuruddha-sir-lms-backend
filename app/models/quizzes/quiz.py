@@ -4,7 +4,7 @@ Represents quiz/assessment information and settings
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app import db
 
@@ -15,7 +15,6 @@ class Quiz(db.Model):
 
     Attributes:
         quiz_id: UUID primary key
-        course_id: Foreign key to Course
         title: Quiz title (max 255 chars)
         description: Quiz description and instructions
         passing_score: Minimum score to pass (default: 70)
@@ -36,13 +35,9 @@ class Quiz(db.Model):
     quiz_id = db.Column(
         db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()), nullable=False
     )
-
     # Foreign Key
-    course_id = db.Column(
-        db.String(36),
-        db.ForeignKey("courses.course_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
     )
 
     # Quiz Information
@@ -51,6 +46,7 @@ class Quiz(db.Model):
 
     # Quiz Configuration
     passing_score = db.Column(db.Integer, default=70, nullable=False)
+    total_marks = db.Column(db.Integer, default=100, nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=True)
     max_attempts = db.Column(db.Integer, default=1, nullable=False)
 
@@ -63,7 +59,12 @@ class Quiz(db.Model):
 
     # Availability
     available_from = db.Column(db.DateTime, nullable=True)
-    available_until = db.Column(db.DateTime, nullable=True, index=True)
+    available_until = db.Column(
+        db.DateTime, nullable=True, index=True, default=lambda: datetime.utcnow() + timedelta(days=365*5)
+    )
+    
+    # Publishing Status
+    is_published = db.Column(db.Boolean, default=False, nullable=False)
 
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -78,7 +79,12 @@ class Quiz(db.Model):
     attempts = db.relationship(
         "QuizAttempt", backref="quiz", lazy="dynamic", cascade="all, delete-orphan"
     )
-
+    lesson_contents = db.relationship(
+        "LessonContent", backref="quiz", lazy="dynamic", cascade="all, delete-orphan"
+    )
+    quiz_courses = db.relationship(
+        "QuizCourse", backref="quiz", lazy="dynamic", cascade="all, delete-orphan"
+    )
     def __repr__(self):
         return f"<Quiz {self.quiz_id} - {self.title}>"
 
@@ -86,10 +92,10 @@ class Quiz(db.Model):
         """Convert quiz to dictionary for JSON serialization."""
         return {
             "quiz_id": self.quiz_id,
-            "course_id": self.course_id,
             "title": self.title,
             "description": self.description,
             "passing_score": self.passing_score,
+            "total_marks": self.total_marks,
             "duration_minutes": self.duration_minutes,
             "max_attempts": self.max_attempts,
             "show_answers_after": self.show_answers_after,
@@ -97,6 +103,7 @@ class Quiz(db.Model):
             "shuffle_answers": self.shuffle_answers,
             "available_from": self.available_from.isoformat() if self.available_from else None,
             "available_until": self.available_until.isoformat() if self.available_until else None,
+            "is_published": self.is_published,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

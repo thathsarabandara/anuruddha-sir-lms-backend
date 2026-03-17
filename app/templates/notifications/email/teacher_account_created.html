@@ -1,0 +1,36 @@
+{% extends "notifications/email/base.html" %}
+{% set theme_color = "#059669" %}
+{% set icon = "🎓" %}
+{% set category = "Instructor Account" %}
+{% set title = "Your Instructor Account is Ready" %}
+{% set subject = "Welcome {{recipient_name}} - Start Teaching on LMS" %}
+
+{% block body %}
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Hello <strong>{{recipient_name}}</strong>,</p>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:0 0 14px;">Welcome! Your instructor account has been successfully created. You're all set to begin creating engaging learning experiences for your students.</p>
+
+<table cellpadding="0" cellspacing="0" style="background:#d1fae5;border-left:4px solid #059669;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;">
+<tr><td>
+<p style="margin:0;color:#333;font-size:14px;line-height:1.8;"><strong style="color:#059669;">Username:</strong> {{username}}<br/><strong style="color:#059669;">Temporary Password:</strong> {{temporary_password}}<br/><strong style="color:#059669;">Email:</strong> {{email}}</p>
+</td></tr>
+</table>
+
+<table cellpadding="0" cellspacing="0" style="background:#ecfdf5;border-left:4px solid #059669;border-radius:0 6px 6px 0;padding:16px 20px;margin:16px 0;width:100%;">
+<tr><td>
+<p style="margin:0;color:#065f46;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">🎓 Get Started Teaching</p>
+<p style="margin:0;color:#333;font-size:14px;line-height:1.9;">✅ Create your first course<br/>✅ Add rich learning content<br/>✅ Design quizzes & assessments<br/>✅ Manage enrollments<br/>✅ Track student progress</p>
+</td></tr>
+</table>
+
+<p style="color:#333333;font-size:15px;line-height:1.7;margin:20px 0 8px;font-weight:600;">Available Resources:</p>
+<p style="color:#333333;font-size:15px;line-height:1.8;margin:0 0 14px;">📚 Course Creation Wizard<br/>🎬 Content Management Tools<br/>📊 Student Analytics<br/>✅ Assessment Builder<br/>🔔 Communication Tools</p>
+
+<p style="color:#777777;font-size:13px;line-height:1.6;margin:20px 0 0;">Instructor support team is here to help:<br/><strong style="color:#059669;">{{support_email}}</strong> or <strong style="color:#059669;">{{support_phone}}</strong></p>
+{% endblock %}
+
+{% block cta %}
+<tr><td style="padding:0 40px 36px;text-align:center;">
+<a href="{{login_url}}" style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:6px;margin-top:16px;">Login & Start Teaching →</a>
+</td></tr>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "notifications/whatsapp/base.txt" %}
+
+{% block english %}
+Welcome to Anuruddha Sir LMS! 🎉
+
+Hi {{recipient_name}}! Your student account is ready. Here are your login credentials:
+
+📝 *Username:* {{username}}
+🔐 *Temporary Password:* {{temporary_password}}
+📧 *Email:* {{email}}
+
+⚠️ *Security First!*
+🔒 Change password after login
+🔐 Never share your credentials
+🛡️ Keep account secure
+
+🚀 *Get Started:*
+✅ Complete your profile
+✅ Browse courses
+✅ Enroll in courses
+✅ Start learning today
+
+🎓 *Login Here:* {{login_url}}
+
+Need help?
+📧 {{support_email}}
+📞 {{support_phone}}
+
+Happy Learning! 📚✨
+{% endblock %}
+
+{% block singlish %}
+අනුරුද්ධ සර් LMS වෙත සාදරයෙන් පිළිගනිමු! 🎉
+
+ආදරණීය පුතා/දියණිය {{recipient_name}}! ,
+
+ඔබේ ශිෂ්‍ය ගිණුම සූදානම්. මෙන්න ඔබේ පිවිසුම් අක්තපත්‍ර:
+
+📝 *පරිශීලක නාමය:* {{username}}
+🔐 *තාවකාලික මුරපදය:* {{temporary_password}}
+📧 *විද්‍යුත් තැපෑල:* {{email}}
+
+⚠️ *පළමුව ආරක්ෂාව!*
+🔒 පිවිසීමෙන් පසු මුරපදය වෙනස් කරන්න
+🔐 ඔබේ අක්තපත්‍ර කිසි විටෙකත් බෙදා නොගන්න
+🛡️ ගිණුම ආරක්ෂිතව තබා ගන්න
+
+🚀 *ආරම්භ කරන්න:*
+✅ ඔබේ පැතිකඩ සම්පූර්ණ කරන්න
+✅ පාඨමාලා බ්‍රවුස් කරන්න
+✅ පාඨමාලා සඳහා ලියාපදිංචි වන්න
+✅ අදම ඉගෙනීම ආරම්භ කරන්න
+
+🎓 *මෙතැනින් පිවිසෙන්න:* {{login_url}}
+
+සහාය අවශ්‍ය?
+📧 {{support_email}}
+📞 {{support_phone}}
+
+සතුටින් ඉගෙනෙන්න! 📚✨
+{% endblock %}

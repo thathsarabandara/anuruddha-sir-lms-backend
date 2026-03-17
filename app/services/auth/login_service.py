@@ -12,7 +12,9 @@ from app import db
 from app.exceptions import AuthenticationError, ValidationError
 from app.models.auth import LoginHistory, User, UserAccountStatus, Role, UserRole
 from app.models.auth.user_role import UserRole
-from app.services.base_service import BaseService
+from app.models.users.student_profile import StudentProfile
+from app.models.users.teacher_profile import TeacherProfile
+from app.services.health.base_service import BaseService
 from app.utils.auth import PasswordManager, SessionManager, TokenManager
 from app.utils.validators import validate_email
 
@@ -119,6 +121,11 @@ class LoginService(BaseService):
                 raise AuthenticationError("Account has not been verified")
 
             if account_status and account_status.is_banned:
+                # If no expiration date, ban is permanent
+                if account_status.ban_expires_at is None:
+                    raise AuthenticationError("Account is permanently banned")
+                
+                # Check if ban has expired
                 if account_status.ban_expires_at > datetime.utcnow():
                     remaining_hours = (
                         account_status.ban_expires_at - datetime.utcnow()
@@ -160,12 +167,10 @@ class LoginService(BaseService):
                         failed_attempts=account_status.failed_login_attempts,
                         ban_expires_at=account_status.ban_expires_at,
                     )
-                    remaining_attempts = LoginService.MAX_LOGIN_ATTEMPTS - account_status.failed_login_attempts
-                
-
-                if remaining_attempts <= 0:
                     raise AuthenticationError("Account locked due to too many failed attempts")
 
+                # Show remaining attempts for non-locked accounts
+                remaining_attempts = LoginService.MAX_LOGIN_ATTEMPTS - account_status.failed_login_attempts
                 raise AuthenticationError(
                     f"Invalid email or password. {remaining_attempts} attempts remaining"
                 )
@@ -175,9 +180,18 @@ class LoginService(BaseService):
                 account_status.failed_login_attempts = 0
                 account_status.last_failed_attempt_at = None
 
-            roleid = UserRole.query.filter_by(user_id=user.user_id).first()
-            if roleid:
-                role_name = Role.query.filter_by(role_id=roleid.role_id).first().role_name
+            # Get user's role from UserRole table
+            user_role = UserRole.query.filter_by(user_id=user.user_id).first()
+            role_name = "student"  # Default role
+            
+            if user_role:
+                role_obj = Role.query.filter_by(role_id=user_role.role_id).first()
+                if role_obj:
+                    role_name = role_obj.role_name
+                    logger.debug(f"User {user.user_id} has role: {role_name}")
+            else:
+                logger.warning(f"User {user.user_id} has no role assigned! Using default 'student'")
+            
             # Generate tokens and store them in database
             access_token = TokenManager.generate_access_token(
                 user.user_id, user.email, user.username, role_name, store_in_db=True
@@ -189,7 +203,7 @@ class LoginService(BaseService):
             # Update last login
             user.last_login = datetime.utcnow()
 
-            # Log login  history
+            # Log login history
             login_record = LoginHistory(
                 user_id=user.user_id,
                 ip_address=ip_address,
@@ -203,12 +217,53 @@ class LoginService(BaseService):
             db.session.add(login_record)
             db.session.commit()
 
-            # Create session in Redis
+            # Create session in Redis with ACTUAL role
             SessionManager.create_session(
-                user.user_id, user.email, user.username, "student", access_token, refresh_token
+                user.user_id, user.email, user.username, role_name, access_token, refresh_token
             )
 
-            logger.info(f"User logged in: {email} (ID: {user.user_id})")
+            logger.info(f"User logged in: {email} (ID: {user.user_id}) with role: {role_name}")
+
+            if role_name == "student":
+                student_profile = StudentProfile.query.filter_by(user_id=user.user_id).first()
+                if student_profile:
+                    return {
+                        "user_id": user.user_id,
+                        "email": user.email,
+                        "username": user.username,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "role": role_name,
+                        "phone": user.phone,
+                        "verified": user.email_verified,
+                        "profile_picture": user.profile_picture,
+                        "date_of_birth": student_profile.date_of_birth.isoformat() if student_profile.date_of_birth else None,
+                        "grade_level": student_profile.grade_level,
+                        "school": student_profile.school,
+                        "address": student_profile.address,
+                        "parent_name": student_profile.parent_name,
+                        "parent_contact": student_profile.parent_contact,
+                    }, access_token, refresh_token
+            elif role_name == "teacher":
+                teacher_profile = TeacherProfile.query.filter_by(user_id=user.user_id).first()
+                if teacher_profile:
+                    return {
+                        "user_id": user.user_id,
+                        "email": user.email,
+                        "phone": user.phone,
+                        "username": user.username,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "role": role_name,
+                        "verified": user.email_verified,
+                        "profile_picture": user.profile_picture,
+                        "qualifications": teacher_profile.qualifications,
+                        "subjects_taught": teacher_profile.get_subjects(),
+                        "years_of_experience": teacher_profile.years_of_experience,
+                        "language_of_instruction": teacher_profile.language_of_instruction,
+                        "professional_bio": teacher_profile.professional_bio,
+                        "address": teacher_profile.address,
+                    }, access_token, refresh_token
 
             return {
                 "user_id": user.user_id,
@@ -216,8 +271,9 @@ class LoginService(BaseService):
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": "student",
+                "role": role_name,
                 "verified": user.email_verified,
+                "profile_picture": user.profile_picture,
             }, access_token, refresh_token
 
         except AuthenticationError:

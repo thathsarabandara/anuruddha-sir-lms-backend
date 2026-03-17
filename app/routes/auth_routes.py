@@ -44,15 +44,15 @@ def set_auth_cookies(response, access_token=None, refresh_token=None):
     """
     # Use secure flag based on environment (True for production, False for development)
     is_secure = current_app.config.get("ENV") == "production"
-
+    
     if access_token:
         response[0].set_cookie(
             "access_token",
             access_token,
-            max_age=1800,  # 30 minutes
+            max_age=20000,  # 2days
             secure=is_secure,
             httponly=True,  # Prevent JavaScript access (XSS protection)
-            samesite="Strict",  # CSRF protection
+            samesite="None" if is_secure else "Lax",
             path="/",
         )
 
@@ -60,10 +60,10 @@ def set_auth_cookies(response, access_token=None, refresh_token=None):
         response[0].set_cookie(
             "refresh_token",
             refresh_token,
-            max_age=604800,  # 7 days
+            max_age=6048000,  # 20 days
             secure=is_secure,
             httponly=True,
-            samesite="Strict",
+            samesite="None" if is_secure else "Lax",
             path="/",
         )
 
@@ -82,6 +82,7 @@ def set_verification_token_cookie(response, verification_token):
         Updated response object with verification token cookie set
     """
     is_secure = current_app.config.get("ENV") == "production"
+    
 
     response[0].set_cookie(
         "verification_token",
@@ -89,7 +90,7 @@ def set_verification_token_cookie(response, verification_token):
         max_age=300,  # 5 minutes (OTP expiry)
         secure=is_secure,
         httponly=True,
-        samesite="Strict",
+        samesite="None" if is_secure else "Lax",
         path="/",
     )
 
@@ -171,6 +172,15 @@ def register():
 
         role = data.get("role", "student")
 
+        # Handle profile picture from files (multipart/form-data) or form data
+        profile_picture = None
+        if "profile_picture" in request.files:
+            # File upload from multipart/form-data
+            profile_picture = request.files["profile_picture"]
+        elif data.get("profile_picture"):
+            # URL string from JSON or form data
+            profile_picture = data.get("profile_picture")
+
         # Build kwargs shared by both roles
         common = dict(
             email=data["email"],
@@ -178,7 +188,7 @@ def register():
             first_name=data["first_name"],
             last_name=data["last_name"],
             phone=phone, 
-            profile_picture=data.get("profile_picture"),
+            profile_picture=profile_picture,
             role=role,
             address=data.get("address"),
         )
@@ -396,6 +406,8 @@ def login():
         response = success_response(
             data={
                 "user": user_data,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
                 "expires_in": 1800,
             },
             message="Login successful",
