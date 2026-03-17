@@ -44,6 +44,7 @@ from venv import logger
 from flask import Blueprint, request
 
 from app.middleware.auth_middleware import require_auth, require_role
+from app.models.quizzes.question import Question
 from app.services.quizzes import (
     QuizAnalyticsService,
     QuizAnswerService,
@@ -411,6 +412,8 @@ def create_question():
                 "category": "string" (optional),
                 "explanation": "string" (optional),
                 "question_order": int (optional),
+                "image_url": "string" (optional, S3 URL or provide image file),
+                "image": file (optional, multipart/form-data file upload),
                 "options": [{option_text, is_correct, option_order}] (optional)
             }
         
@@ -431,7 +434,7 @@ def create_question():
         if request.is_json:
             data = request.get_json() or {}
         else:
-            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+            data = request.form.to_dict() or {}
 
         quiz_id = request.args.get("quiz_id") or data.get("quiz_id")
 
@@ -458,6 +461,7 @@ def create_question():
                     category=q_data.get("category"),
                     explanation=q_data.get("explanation"),
                     question_order=q_data.get("question_order"),
+                    image_url=q_data.get("image_url"),
                     options=q_data.get("options"),
                 )
                 questions.append(question)
@@ -474,6 +478,52 @@ def create_question():
             if not data.get("question_text"):
                 return error_response("question_text is required", 400)
 
+            # Handle image upload if provided
+            image_url = data.get("image_url")
+            if "image" in request.files:
+                image_file = request.files.get("image")
+                if image_file and image_file.filename:
+                    try:
+                        # Validate file
+                        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                        if '.' in image_file.filename:
+                            file_ext = image_file.filename.rsplit('.', 1)[1].lower()
+                            if file_ext not in allowed_extensions:
+                                return error_response(
+                                    f"Invalid image format. Allowed: {', '.join(allowed_extensions)}", 400
+                                )
+                        
+                        # Create a temporary question first to get the question_id for S3 path
+                        temp_question = QuestionService.create_question(
+                            quiz_id=quiz_id,
+                            user_id=request.user_id,
+                            user_role=request.user_role,
+                            question_type=data["question_type"],
+                            question_text=data["question_text"],
+                            points=data.get("points", 1),
+                            difficulty=data.get("difficulty", "medium"),
+                            category=data.get("category"),
+                            explanation=data.get("explanation"),
+                            question_order=data.get("question_order"),
+                            options=data.get("options"),
+                        )
+                        
+                        # Upload the image to S3
+                        image_url = QuestionService.upload_question_image(
+                            image_file, quiz_id, temp_question["question_id"]
+                        )
+                        
+                        # Update the question with the image URL
+                        updated_question = QuestionService.update_question(
+                            question_id=temp_question["question_id"],
+                            user_id=request.user_id,
+                            user_role=request.user_role,
+                            image_url=image_url,
+                        )
+                        return success_response(data=updated_question, message="Question created successfully with image", status_code=201)
+                    except Exception as e:
+                        return error_response(f"Image upload failed: {str(e)}", 400)
+
             question = QuestionService.create_question(
                 quiz_id=quiz_id,
                 user_id=request.user_id,
@@ -485,6 +535,7 @@ def create_question():
                 category=data.get("category"),
                 explanation=data.get("explanation"),
                 question_order=data.get("question_order"),
+                image_url=image_url,
                 options=data.get("options"),
             )
             return success_response(data=question, message="Question created successfully", status_code=201)
@@ -555,6 +606,7 @@ def update_question():
 
     Request Body:
         Any updatable question fields; include 'options' list to replace options.
+        Can also include 'image' file (multipart/form-data) to upload a new image.
 
     Returns:
         200: Updated question data
@@ -565,9 +617,43 @@ def update_question():
         if request.is_json:
             data = request.get_json() or {}
         else:
-            data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+            data = request.form.to_dict() or {}
 
-        question_id = request.args.get("question_id") or question_id
+        question_id = request.args.get("question_id") or data.get("question_id")
+        
+        if not question_id:
+            return error_response("question_id is required", 400)
+
+        # Handle image upload if provided
+        if "image" in request.files:
+            image_file = request.files.get("image")
+            if image_file and image_file.filename:
+                try:
+                    # Get the question to extract quiz_id
+                    question_obj = Question.query.get(question_id)
+                    if not question_obj:
+                        return error_response("Question not found", 404)
+                    
+                    quiz_id = question_obj.quiz_id
+                    
+                    # Validate file
+                    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                    if '.' in image_file.filename:
+                        file_ext = image_file.filename.rsplit('.', 1)[1].lower()
+                        if file_ext not in allowed_extensions:
+                            return error_response(
+                                f"Invalid image format. Allowed: {', '.join(allowed_extensions)}", 400
+                            )
+                    
+                    # Upload the image to S3
+                    image_url = QuestionService.upload_question_image(
+                        image_file, quiz_id, question_id
+                    )
+                    
+                    # Set the image_url in the data
+                    data["image_url"] = image_url
+                except Exception as e:
+                    return error_response(f"Image upload failed: {str(e)}", 400)
 
         question = QuestionService.update_question(
             question_id=question_id,
