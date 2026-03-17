@@ -103,6 +103,7 @@ class QuizService(BaseService):
         shuffle_answers: bool = False,
         available_from: str = None,
         available_until: str = None,
+        total_marks: int = 100,
         course_ids: list = None,
     ) -> dict:
         """
@@ -120,6 +121,7 @@ class QuizService(BaseService):
             shuffle_answers: Randomize answer options per attempt
             available_from: ISO timestamp for quiz start availability
             available_until: ISO timestamp for quiz end availability
+            total_marks: Total marks for the quiz (default 100)
             course_ids: List of course UUIDs to assign quiz to (optional, can be empty or None)
 
         Returns:
@@ -156,12 +158,21 @@ class QuizService(BaseService):
             except (ValueError, TypeError):
                 raise ValidationError("max_attempts must be a valid integer")
 
+            try:
+                if total_marks is not None:
+                    total_marks = int(total_marks)
+            except (ValueError, TypeError):
+                raise ValidationError("total_marks must be a valid integer")
+
             # Validate numeric ranges
             if passing_score is not None and not (0 <= passing_score <= 100):
                 raise ValidationError("passing_score must be between 0 and 100")
 
             if max_attempts is not None and max_attempts < 1:
                 raise ValidationError("max_attempts must be at least 1")
+
+            if total_marks is not None and total_marks < 1:
+                raise ValidationError("total_marks must be at least 1")
 
             # Parse timestamps using flexible parser
             from_dt = parse_datetime(available_from) if available_from else None
@@ -176,6 +187,7 @@ class QuizService(BaseService):
                 title=title.strip(),
                 description=description,
                 passing_score=passing_score if passing_score is not None else 70,
+                total_marks=total_marks if total_marks is not None else 100,
                 duration_minutes=duration_minutes,
                 max_attempts=max_attempts if max_attempts is not None else 1,
                 show_answers_after=show_answers_after,
@@ -326,7 +338,7 @@ class QuizService(BaseService):
                 raise ResourceNotFoundError("Quiz not found")
 
             allowed_fields = (
-                "title", "description", "passing_score", "duration_minutes",
+                "title", "description", "passing_score", "total_marks", "duration_minutes",
                 "max_attempts", "show_answers_after", "shuffle_questions",
                 "shuffle_answers", "available_from", "available_until", "is_published",
             )
@@ -334,6 +346,16 @@ class QuizService(BaseService):
             for field, value in kwargs.items():
                 if field not in allowed_fields:
                     continue
+                
+                # Validate total_marks
+                if field == "total_marks" and value is not None:
+                    try:
+                        value = int(value)
+                        if value < 1:
+                            raise ValidationError("total_marks must be at least 1")
+                    except (ValueError, TypeError):
+                        raise ValidationError("total_marks must be a valid integer")
+                
                 if field in ("available_from", "available_until") and value:
                     try:
                         value = parse_datetime(value)
