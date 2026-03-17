@@ -15,7 +15,6 @@ class Quiz(db.Model):
 
     Attributes:
         quiz_id: UUID primary key
-        course_id: Foreign key to Course
         title: Quiz title (max 255 chars)
         description: Quiz description and instructions
         passing_score: Minimum score to pass (default: 70)
@@ -47,6 +46,7 @@ class Quiz(db.Model):
 
     # Quiz Configuration
     passing_score = db.Column(db.Integer, default=70, nullable=False)
+    total_marks = db.Column(db.Integer, default=100, nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=True)
     max_attempts = db.Column(db.Integer, default=1, nullable=False)
 
@@ -95,6 +95,7 @@ class Quiz(db.Model):
             "title": self.title,
             "description": self.description,
             "passing_score": self.passing_score,
+            "total_marks": self.total_marks,
             "duration_minutes": self.duration_minutes,
             "max_attempts": self.max_attempts,
             "show_answers_after": self.show_answers_after,
