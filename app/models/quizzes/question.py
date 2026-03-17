@@ -49,7 +49,7 @@ class Question(db.Model):
     # Question Type and Content
     question_type = db.Column(
         db.Enum(
-            "multiple_choice", "multiple_answer", "short_answer", "essay", "matching", "fill_blank"
+            "multiple_choice", "single_choice", "short_answer", "essay", "matching", "fill_blank"
         ),
         nullable=False,
         index=True,
@@ -64,6 +64,7 @@ class Question(db.Model):
     # Additional Information
     explanation = db.Column(db.Text, nullable=True)
     question_order = db.Column(db.Integer, nullable=True)
+    image_url = db.Column(db.Text, nullable=True)
 
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -94,6 +95,7 @@ class Question(db.Model):
             "category": self.category,
             "explanation": self.explanation,
             "question_order": self.question_order,
+            "image_url": self.image_url,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
